@@ -141,23 +141,29 @@ struct InspectorView: View {
     }
 
     private func effectCategorySection(_ rows: [Row]) -> some View {
-        let categories = Set(rows.compactMap(\.effectCategory))
-        let overridden = rows.contains { $0.meta.effectCategory != nil }
+        let ids = Set(rows.compactMap { $0.effectType?.id })
+        let overridden = rows.contains { $0.meta.effectType != nil }
         return VStack(alignment: .leading, spacing: 6) {
-            Text("Type").font(.headline)
-            Picker("Type", selection: Binding<EffectCategory?>(
-                get: { categories.count == 1 ? categories.first : nil },
-                set: { if let c = $0 { model.setEffectCategory(c, for: ids) } }
+            HStack {
+                Text("Type").font(.headline)
+                Spacer()
+                Button("Edit Types…") { model.showEffectTypes = true }.controlSize(.small)
+            }
+            Picker("Type", selection: Binding<String?>(
+                get: { ids.count == 1 ? ids.first : nil },
+                set: { if let id = $0 { model.setEffectType(id, for: self.ids) } }
             )) {
-                if categories.count != 1 { Text("Mixed").tag(EffectCategory?.none) }
-                ForEach(EffectCategory.allCases, id: \.self) { Text($0.singularName).tag(EffectCategory?.some($0)) }
+                if ids.count != 1 { Text("Mixed").tag(String?.none) }
+                ForEach(model.effectTypes + [EffectType.other]) { type in
+                    Label(type.singular, systemImage: type.symbol).tag(String?.some(type.id))
+                }
             }
             .labelsHidden()
             if overridden {
-                Button("Use Auto-Detected") { model.setEffectCategory(nil, for: ids) }
+                Button("Use Auto-Detected") { model.setEffectType(nil, for: self.ids) }
                     .controlSize(.small)
             } else {
-                Text("Detected from the file and folder names.").font(.caption).foregroundStyle(.secondary)
+                Text("Detected from the file and folder names, using the type list's keywords.").font(.caption).foregroundStyle(.secondary)
             }
         }
     }

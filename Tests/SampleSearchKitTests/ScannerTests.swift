@@ -65,7 +65,14 @@ final class ScannerTests: XCTestCase {
         let files = SampleSearchKit.Scanner.scan(roots: [], effectRoots: [root]).sorted { $0.name < $1.name }
         XCTAssertEqual(files.map(\.name), ["808 Sub Drop", "Big Riser 01", "Crash Swell", "Impact Boom", "Reverse Cymbal", "Snare Hit"], ".tci ignored in effects roots")
         XCTAssertTrue(files.allSatisfy { $0.kind == .effect })
-        XCTAssertEqual(files.map(\.effectCategory), [.subdrop, .riser, .cymbal, .impact, .reverse, .hit])
+        XCTAssertEqual(files.map(\.effectType), ["subdrop", "riser", "cymbal", "impact", "reverse", "hit"])
+
+        // Custom types: list order is priority, unknown stays nil (Other).
+        let custom = [EffectType(id: "swell", name: "Swells", singular: "Swell", symbol: "sun.max", keywords: ["swell"])] + EffectType.defaults
+        XCTAssertEqual(Classifier.effectType(name: "Crash Swell", folders: [], types: custom), "swell")
+        XCTAssertNil(Classifier.effectType(name: "Mystery 01", folders: [], types: custom))
+        XCTAssertEqual(EffectType.resolve("swell", in: custom).name, "Swells")
+        XCTAssertEqual(EffectType.resolve("nope", in: custom).id, "other")
         XCTAssertEqual(Set(files.map(\.pack)), ["Cinematic Pack"])
     }
 

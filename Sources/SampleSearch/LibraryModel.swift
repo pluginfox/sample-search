@@ -8,7 +8,7 @@ enum SidebarFilter: Hashable {
     case untagged
     case category(DrumCategory)
     case source(SourceType)
-    case effectCategory(EffectCategory)
+    case effectType(String)
     case pack(String)
     case tag(String)
     case vendor(String)
@@ -72,15 +72,17 @@ struct Row: Identifiable, Hashable {
     let haystack: String
     /// Case-folded, number-aware key so "Snare 2" sorts before "Snare 10".
     let nameKey: String
+    /// Resolved effect type (override, else auto-detected, else Other); nil for Trigger-library files.
+    let effectType: EffectType?
 
-    init(file: TCIFile, meta: ItemMeta, vendor: String, pack: String, kit: String) {
+    init(file: TCIFile, meta: ItemMeta, vendor: String, pack: String, kit: String, effectType: EffectType?) {
         self.file = file
         self.meta = meta
         self.vendor = vendor
         self.pack = pack
         self.kit = kit
-        let effect = file.kind == .effect ? (meta.effectCategory ?? file.effectCategory ?? .other) : nil
-        let categoryName = effect?.singularName ?? (meta.category ?? file.category).singularName
+        self.effectType = effectType
+        let categoryName = effectType?.singular ?? (meta.category ?? file.category).singularName
         haystack = [file.name, file.folder, pack, kit, categoryName, (meta.source ?? file.source).displayName,
                     meta.tags.joined(separator: ", "), file.variant ?? "", vendor, meta.notes]
             .joined(separator: " ").lowercased()
@@ -110,10 +112,9 @@ struct Row: Identifiable, Hashable {
     var variant: String { file.variant ?? "" }
     var category: DrumCategory { meta.category ?? file.category }
     var isEffect: Bool { file.kind == .effect }
-    var effectCategory: EffectCategory? { isEffect ? (meta.effectCategory ?? file.effectCategory ?? .other) : nil }
     /// Drum category for Trigger-library files, effect type for effects.
-    var categoryName: String { effectCategory?.singularName ?? category.singularName }
-    var categorySymbol: String { effectCategory?.symbol ?? category.symbol }
+    var categoryName: String { effectType?.singular ?? category.singularName }
+    var categorySymbol: String { effectType?.symbol ?? category.symbol }
     var source: SourceType { meta.source ?? file.source }
     var sourceName: String { source.displayName }
     var folder: String { file.folder }
@@ -174,7 +175,8 @@ final class LibraryModel: ObservableObject {
     @Published private(set) var favoriteCount = 0
     @Published private(set) var untaggedCount = 0
     @Published private(set) var categoryCounts: [(DrumCategory, Int)] = []
-    @Published private(set) var effectCategoryCounts: [(EffectCategory, Int)] = []
+    @Published private(set) var effectTypeCounts: [(EffectType, Int)] = []
+    @Published var showEffectTypes = false
     @Published private(set) var sourceCounts: [(SourceType, Int)] = []
     @Published private(set) var packCounts: [(String, Int)] = []
     @Published private(set) var vendorCounts: [(String, Int)] = []
@@ -326,12 +328,27 @@ final class LibraryModel: ObservableObject {
 
     // MARK: - Rows and filtering
 
+    var effectTypes: [EffectType] { data.effectTypes }
+
     private func makeRow(_ file: TCIFile) -> Row {
         let meta = data.items[file.path] ?? ItemMeta()
         return Row(file: file, meta: meta,
                    vendor: data.vendors[file.packKey] ?? file.vendor ?? "",
                    pack: data.packNames[file.packKey] ?? file.pack,
-                   kit: meta.kit ?? file.kitPath.flatMap { data.kitNames[$0] } ?? file.kit ?? "")
+                   kit: meta.kit ?? file.kitPath.flatMap { data.kitNames[$0] } ?? file.kit ?? "",
+                   effectType: file.kind == .effect ? EffectType.resolve(meta.effectType ?? file.effectType, in: data.effectTypes) : nil)
+    }
+
+    /// Replaces the effect-type list, re-detects every effect's type and keeps manual overrides
+    /// (an override naming a deleted type falls back to Other).
+    func setEffectTypes(_ types: [EffectType]) {
+        data.effectTypes = types
+        let folders = { (file: TCIFile) -> [String] in file.folder.isEmpty ? [] : file.folder.components(separatedBy: "/") }
+        files = files.map { file in
+            guard file.kind == .effect else { return file }
+            return file.withEffectType(Classifier.effectType(name: file.name, folders: folders(file), types: types))
+        }
+        persist(triggersExport: false)
     }
 
     /// Rebuilds every cached row and count. Called when files, metadata or the mode change.
@@ -347,13 +364,13 @@ final class LibraryModel: ObservableObject {
             }
         }
         var favorites = 0, untagged = 0
-        var categories: [DrumCategory: Int] = [:], effects: [EffectCategory: Int] = [:], sources: [SourceType: Int] = [:]
+        var categories: [DrumCategory: Int] = [:], effects: [String: Int] = [:], sources: [SourceType: Int] = [:]
         var packs: [String: Int] = [:], vendors: [String: Int] = [:], tags: [String: Int] = [:]
         var kits: [String: [String: Int]] = [:]
         for row in allRows {
             if row.favorite { favorites += 1 }
             if row.tags.isEmpty { untagged += 1 }
-            if let e = row.effectCategory { effects[e, default: 0] += 1 } else { categories[row.category, default: 0] += 1 }
+            if let e = row.effectType { effects[e.id, default: 0] += 1 } else { categories[row.category, default: 0] += 1 }
             if !row.isEffect { sources[row.source, default: 0] += 1 }
             packs[row.pack, default: 0] += 1
             vendors[row.vendor.isEmpty ? "Unknown" : row.vendor, default: 0] += 1
@@ -363,7 +380,7 @@ final class LibraryModel: ObservableObject {
         favoriteCount = favorites
         untaggedCount = untagged
         categoryCounts = DrumCategory.allCases.compactMap { c in categories[c].map { (c, $0) } }
-        effectCategoryCounts = EffectCategory.allCases.compactMap { e in effects[e].map { (e, $0) } }
+        effectTypeCounts = (data.effectTypes + [EffectType.other]).compactMap { t in effects[t.id].map { (t, $0) } }
         sourceCounts = SourceType.allCases.compactMap { s in sources[s].map { (s, $0) } }
         let byName: ((String, Int), (String, Int)) -> Bool = { $0.0.localizedCaseInsensitiveCompare($1.0) == .orderedAscending }
         packCounts = packs.map { ($0.key, $0.value) }.sorted(by: byName)
@@ -434,7 +451,7 @@ final class LibraryModel: ObservableObject {
         case .untagged: return row.tags.isEmpty
         case .category(let c): return row.category == c
         case .source(let s): return row.source == s
-        case .effectCategory(let e): return row.effectCategory == e
+        case .effectType(let id): return row.effectType?.id == id
         case .pack(let p): return row.pack == p
         case .tag(let t): return row.tags.contains(t)
         case .vendor(let v): return row.vendor == v
@@ -442,9 +459,12 @@ final class LibraryModel: ObservableObject {
         }
     }
 
-    func setEffectCategory(_ category: EffectCategory?, for ids: Set<String>) {
+    func setEffectType(_ id: String?, for ids: Set<String>) {
         // An override equal to the auto-detected value is dropped rather than stored.
-        updateEach(ids) { file, meta in meta.effectCategory = (file?.effectCategory ?? .other) == category ? nil : category }
+        updateEach(ids) { file, meta in
+            let detected = file?.effectType ?? EffectType.other.id
+            meta.effectType = (id == nil || id == detected) ? nil : id
+        }
     }
 
     func setSource(_ source: SourceType?, for ids: Set<String>) {
@@ -533,8 +553,9 @@ final class LibraryModel: ObservableObject {
         isScanning = true
         let roots = self.roots
         let effectRoots = self.effectRoots
+        let types = data.effectTypes
         Task.detached(priority: .userInitiated) {
-            let found = Scanner.scan(roots: roots, effectRoots: effectRoots)
+            let found = Scanner.scan(roots: roots, effectRoots: effectRoots, effectTypes: types)
             await MainActor.run {
                 self.files = found
                 self.data.reconcile(with: found)
@@ -676,12 +697,7 @@ final class LibraryModel: ObservableObject {
     @Published var browserFolderMessage: String?
 
     /// Rows for every Trigger-library file regardless of the current mode. Effects are never exported.
-    private var exportRows: [Row] {
-        files.filter(\.kind.isTriggerLibrary).map { Row(file: $0, meta: data.items[$0.path] ?? ItemMeta(),
-                        vendor: data.vendors[$0.packKey] ?? $0.vendor ?? "",
-                        pack: data.packNames[$0.packKey] ?? $0.pack,
-                        kit: (data.items[$0.path]?.kit) ?? $0.kitPath.flatMap { data.kitNames[$0] } ?? $0.kit ?? "") }
-    }
+    private var exportRows: [Row] { everyRow.filter(\.kind.isTriggerLibrary) }
 
     /// Manual rebuild of the symlink folder Trigger's browser navigates; reports the result in an alert.
     func updateBrowserFolder() {

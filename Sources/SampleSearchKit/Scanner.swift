@@ -3,11 +3,11 @@ import Foundation
 /// Walks library roots and lists every `.tci`, `.wav` and `.aiff` file.
 public enum Scanner {
     /// Scans Trigger-library roots (tci + wav/aiff one-shots) and Effects roots (wav/aiff as effects).
-    public static func scan(roots: [URL], effectRoots: [URL] = []) -> [TCIFile] {
+    public static func scan(roots: [URL], effectRoots: [URL] = [], effectTypes: [EffectType] = EffectType.defaults) -> [TCIFile] {
         var seen = Set<String>()
         var results: [TCIFile] = []
         for (root, effects) in roots.map { ($0, false) } + effectRoots.map { ($0, true) } {
-            for file in scan(root: root, asEffects: effects) where !seen.contains(file.path) {
+            for file in scan(root: root, asEffects: effects, effectTypes: effectTypes) where !seen.contains(file.path) {
                 seen.insert(file.path)
                 results.append(file)
             }
@@ -15,7 +15,7 @@ public enum Scanner {
         return results
     }
 
-    public static func scan(root: URL, asEffects: Bool = false) -> [TCIFile] {
+    public static func scan(root: URL, asEffects: Bool = false, effectTypes: [EffectType] = EffectType.defaults) -> [TCIFile] {
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
         guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: keys,
@@ -41,7 +41,7 @@ public enum Scanner {
         let rootIsPack = rootIsPackDecision(rootName: root.lastPathComponent, firstLevelFolders: firstLevel)
         return found.map { entry in
             make(url: entry.url, kind: entry.kind, rootPath: rootPath, rootName: root.lastPathComponent,
-                 size: entry.size, modified: entry.modified, rootIsPack: rootIsPack)
+                 size: entry.size, modified: entry.modified, rootIsPack: rootIsPack, effectTypes: effectTypes)
         }
     }
 
@@ -105,7 +105,7 @@ public enum Scanner {
     }
 
     static func make(url: URL, kind: FileKind, rootPath: String, rootName: String, size: Int64, modified: Date,
-                     rootIsPack: Bool? = nil) -> TCIFile {
+                     rootIsPack: Bool? = nil, effectTypes: [EffectType] = EffectType.defaults) -> TCIFile {
         let path = url.standardizedFileURL.path
         let name = url.deletingPathExtension().lastPathComponent
         var relative = path.hasPrefix(rootPath + "/") ? String(path.dropFirst(rootPath.count + 1)) : url.lastPathComponent
@@ -118,7 +118,7 @@ public enum Scanner {
                        kit: layout.kit, kitPath: layout.kitPath, folder: relative,
                        category: Classifier.category(name: name, folders: folders),
                        source: Classifier.source(name: name, folders: folders),
-                       effectCategory: kind == .effect ? Classifier.effectCategory(name: name, folders: folders) : nil,
+                       effectType: kind == .effect ? Classifier.effectType(name: name, folders: folders, types: effectTypes) : nil,
                        vendor: Vendors.guess(root: rootPath, folders: folders),
                        size: size, modified: modified)
     }

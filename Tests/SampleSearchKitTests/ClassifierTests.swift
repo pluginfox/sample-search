@@ -62,6 +62,13 @@ final class ClassifierTests: XCTestCase {
         XCTAssertEqual(meta.source, .rooms)
     }
 
+    func testOldEffectCategoryKeyDecodesAsEffectType() throws {
+        let json = #"{"tags":[],"favorite":false,"effectCategory":"riser","fileName":"a.wav","fileSize":1}"#.data(using: .utf8)!
+        XCTAssertEqual(try JSONDecoder().decode(ItemMeta.self, from: json).effectType, "riser")
+        let lib = #"{"roots":[],"items":{}}"#.data(using: .utf8)!
+        XCTAssertEqual(try JSONDecoder().decode(LibraryData.self, from: lib).effectTypes, EffectType.defaults)
+    }
+
     func testReconcileFollowsMovedFile() {
         var data = LibraryData()
         data.items["/old/Snare 5 SSDR.tci"] = ItemMeta(tags: ["punchy"], favorite: true, fileName: "Snare 5 SSDR.tci", fileSize: 100)

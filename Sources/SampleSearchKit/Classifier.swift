@@ -35,36 +35,17 @@ public enum Classifier {
         (.direct, ["dir", "di", "in", "out", "sub"]),
     ]
 
-    private static let effectKeywords: [(EffectCategory, [String])] = [
-        (.reverse, ["reverse", "reversed", "backward", "rev "]),
-        (.riser, ["riser", "uplifter", "upsweep", "up sweep", "rise", "build", "tension"]),
-        (.subdrop, ["sub drop", "subdrop", "sub-drop", "bass drop", "808 drop", "sub bass", "sub "]),
-        (.downlifter, ["downlifter", "downsweep", "down sweep", "downer", "fall", "faller", "drop"]),
-        (.impact, ["impact", "boom", "slam", "explosion", "crash fx", "cinematic hit"]),
-        (.hit, ["hit", "stab", "punch", "one shot fx", "shot"]),
-        (.cymbal, ["cymbal", "crash", "china", "splash", "ride", "swell", "cym "]),
-        (.whoosh, ["whoosh", "swoosh", "sweep", "swish", "wind", "flyby", "fly by", "pass"]),
-        (.drone, ["drone", "pad", "texture", "atmos", "ambien", "noise", "bed", "soundscape"]),
-    ]
-
-    /// Effect type from the file name first, then folders nearest-first; `.other` when nothing matches.
-    /// "Reverse" anywhere in the name wins, so a reversed cymbal or crash files under Reverses.
-    public static func effectCategory(name: String, folders: [String]) -> EffectCategory {
+    /// Effect type id for a file: checks the name first, then folders nearest-first. Within one
+    /// text, types are tried in list order and the first with any keyword present wins, so the
+    /// list's order is its priority. Nil when nothing matches (Other).
+    public static func effectType(name: String, folders: [String], types: [EffectType] = EffectType.defaults) -> String? {
         for text in [name] + folders.reversed() {
             let lower = text.lowercased()
-            if effectKeywords[0].1.contains(where: { lower.contains($0) }) { return .reverse }
-            var best: (EffectCategory, Int)?
-            for (category, keywords) in effectKeywords {
-                for keyword in keywords {
-                    if let range = lower.range(of: keyword) {
-                        let index = lower.distance(from: lower.startIndex, to: range.lowerBound)
-                        if best == nil || index < best!.1 { best = (category, index) }
-                    }
-                }
+            for type in types where type.keywords.contains(where: { !$0.isEmpty && lower.contains($0.lowercased()) }) {
+                return type.id
             }
-            if let best { return best.0 }
         }
-        return .other
+        return nil
     }
 
     /// Source from the file name first, then folders nearest-first; Direct when nothing matches.

@@ -57,6 +57,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $model.showFolders) { FoldersSheet() }
         .sheet(isPresented: $model.showWelcome) { WelcomeSheet() }
+        .sheet(isPresented: $model.showEffectTypes) { EffectTypesSheet() }
         .alert("Reset Settings?", isPresented: $model.confirmReset) {
             Button("Reset", role: .destructive) { model.resetSettings() }
             Button("Cancel", role: .cancel) {}
@@ -137,9 +138,13 @@ struct SidebarView: View {
             }
             if model.mode.isEffects {
                 Section("Types") {
-                    ForEach(model.effectCategoryCounts, id: \.0) { category, count in
-                        row(category.displayName, category.symbol, count, .effectCategory(category))
+                    ForEach(model.effectTypeCounts, id: \.0.id) { type, count in
+                        row(type.name, type.symbol, count, .effectType(type.id))
                     }
+                    Button { model.showEffectTypes = true } label: {
+                        Label("Edit Types…", systemImage: "slider.horizontal.3").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
             } else {
                 Section("Categories") {
