@@ -56,7 +56,6 @@ struct FoldersSheet: View {
                     section("Updates",
                             "Checks GitHub releases for a newer version.") {
                         Toggle("Check for updates automatically, once a day", isOn: $autoCheckUpdates)
-                        GitHubTokenField()
                     }
                 }
                 .padding(.trailing, 4)
@@ -69,7 +68,7 @@ struct FoldersSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 580, height: 880)
+        .frame(width: 580, height: 760)
     }
 
     /// A titled block with a wrapping caption and its controls, visually separated from the next.
@@ -184,52 +183,5 @@ struct FoldersSheet: View {
         let files = await finder.findAll()
         suggestions = TCIFinder.suggestRoots(for: files)
         searching = false
-    }
-}
-
-/// Token for reading releases of a private repository. Stored in the Keychain, never in preferences.
-struct GitHubTokenField: View {
-    @EnvironmentObject var updates: UpdateChecker
-    @State private var draft = ""
-    @State private var saved = UpdateChecker.hasToken
-    @State private var status: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("GitHub token").font(.headline)
-                if saved { Text("· saved in Keychain").font(.caption).foregroundStyle(.secondary) }
-            }
-            Text("Needed only while the repository is private. Create a fine-grained token at github.com › Settings › Developer settings with read access to Contents on pluginfox/sample-search, or a classic token with the repo scope.")
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            HStack {
-                SecureField(saved ? "•••••••••••• (enter a new token to replace)" : "github_pat_…", text: $draft)
-                    .textFieldStyle(.roundedBorder)
-                Button("Save") {
-                    UpdateChecker.token = draft
-                    saved = UpdateChecker.hasToken
-                    draft = ""
-                    status = nil
-                }
-                .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
-                Button("Test") { Task { await test() } }.disabled(!saved || updates.isChecking)
-                if saved {
-                    Button("Remove") { UpdateChecker.token = nil; saved = false; status = nil }
-                }
-            }
-            if let status { Text(status).font(.caption).foregroundStyle(.secondary) }
-        }
-    }
-
-    @MainActor
-    private func test() async {
-        await updates.check()
-        switch updates.outcome {
-        case .upToDate(let v): status = "Token works. \(v) is the latest version."
-        case .available(let r, _): status = "Token works. \(r.tag_name) is available."
-        case .failed(let reason): status = reason
-        case .none: status = nil
-        }
-        updates.outcome = nil   // keep the result inline instead of the main-window alert
     }
 }

@@ -34,19 +34,6 @@ final class UpdateChecker: ObservableObject {
     @Published var outcome: Outcome?
     @Published private(set) var isChecking = false
 
-    /// Personal access token for a private repository, kept in the Keychain.
-    static var token: String? {
-        get { Keychain.read(Keychain.githubTokenAccount) }
-        set {
-            if let t = newValue?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty {
-                Keychain.write(t, account: Keychain.githubTokenAccount)
-            } else {
-                Keychain.delete(Keychain.githubTokenAccount)
-            }
-        }
-    }
-    static var hasToken: Bool { !(token ?? "").isEmpty }
-
     static var currentVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
@@ -60,22 +47,11 @@ final class UpdateChecker: ObservableObject {
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("Trigger-Search/\(Self.currentVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 15
-        if let token = Self.token, !token.isEmpty {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if status == 401 {
-                if !quiet { outcome = .failed("GitHub rejected the token. Check it in the Folders sheet under GitHub.") }
-                return
-            }
             if status == 404 {
-                if !quiet {
-                    outcome = Self.hasToken
-                        ? .upToDate(current: Self.currentVersion)   // token works, no releases yet
-                        : .failed("GitHub can't see the repository. It is probably private: add a GitHub token in the Folders sheet under GitHub.")
-                }
+                if !quiet { outcome = .failed("GitHub has no public releases for \(Self.repo) yet.") }
                 return
             }
             let release = try JSONDecoder().decode(Release.self, from: data)
