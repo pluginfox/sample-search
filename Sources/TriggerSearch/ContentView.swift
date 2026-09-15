@@ -3,6 +3,7 @@ import TriggerSearchKit
 
 struct ContentView: View {
     @EnvironmentObject var model: LibraryModel
+    @EnvironmentObject var updates: UpdateChecker
     @AppStorage("showInspector") private var showInspector = true
 
     var body: some View {
@@ -49,6 +50,15 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $model.showFolders) { FoldersSheet() }
+        .alert(updateTitle, isPresented: Binding(get: { updates.outcome != nil }, set: { if !$0 { updates.outcome = nil } })) {
+            if case .available(let release, _) = updates.outcome {
+                Button("Download") { NSWorkspace.shared.open(release.downloadURL) }
+                Button("Release Notes") { NSWorkspace.shared.open(URL(string: release.html_url) ?? UpdateChecker.releasesPage) }
+                Button("Later", role: .cancel) {}
+            } else {
+                Button("OK", role: .cancel) {}
+            }
+        } message: { Text(updateMessage) }
         .alert("Trigger Browser Folder", isPresented: Binding(get: { model.browserFolderMessage != nil },
                                                               set: { if !$0 { model.browserFolderMessage = nil } })) {
             Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([BrowserFolder.url]) }
@@ -57,6 +67,27 @@ struct ContentView: View {
         .onAppear { if !model.roots.isEmpty { model.rescan() } }
         .onChange(of: model.selection) { _ in model.selectionChanged() }
         .frame(minWidth: 900, minHeight: 500)
+    }
+
+    private var updateTitle: String {
+        switch updates.outcome {
+        case .available: return "Update Available"
+        case .upToDate: return "You're Up to Date"
+        case .failed: return "Couldn't Check for Updates"
+        case .none: return ""
+        }
+    }
+
+    private var updateMessage: String {
+        switch updates.outcome {
+        case .available(let release, let current):
+            let notes = (release.body ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let summary = notes.isEmpty ? "" : "\n\n" + String(notes.prefix(400))
+            return "Trigger Search \(release.tag_name) is available; you have \(current).\(summary)"
+        case .upToDate(let current): return "Trigger Search \(current) is the latest version."
+        case .failed(let reason): return reason
+        case .none: return ""
+        }
     }
 
     private func label(for mode: LibraryMode) -> String {

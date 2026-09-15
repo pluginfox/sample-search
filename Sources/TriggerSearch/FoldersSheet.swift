@@ -8,6 +8,7 @@ struct FoldersSheet: View {
     @State private var suggestions: [(root: URL, count: Int)]?
     @State private var chosen: Set<String> = []
     @State private var browserPath = BrowserFolder.url.path
+    @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -49,6 +50,9 @@ struct FoldersSheet: View {
                 Toggle("Show the current selection (or the whole sidebar group when nothing is selected) at the top level of the folder", isOn: $model.mirrorSelection)
                     .font(.callout)
             }
+            Divider()
+            Toggle("Check for updates automatically (once a day, from GitHub releases)", isOn: $autoCheckUpdates)
+                .font(.callout)
             Divider()
 
             HStack {

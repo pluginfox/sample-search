@@ -3,15 +3,24 @@ import SwiftUI
 @main
 struct TriggerSearchApp: App {
     @StateObject private var model = LibraryModel.shared
+    @StateObject private var updates = UpdateChecker()
 
     var body: some Scene {
         WindowGroup("Trigger Search") {
             ContentView()
                 .environmentObject(model)
+                .environmentObject(updates)
                 .background(WindowFrameSaver(name: "MainWindow"))
+                .onAppear { updates.checkAtLaunchIfDue() }
         }
         .defaultSize(width: 1280, height: 780)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button(updates.isChecking ? "Checking for Updates…" : "Check for Updates…") {
+                    Task { await updates.check() }
+                }
+                .disabled(updates.isChecking)
+            }
             CommandGroup(replacing: .newItem) {
                 Button("Library Folders…") { model.showFolders = true }
                     .keyboardShortcut(",", modifiers: .command)

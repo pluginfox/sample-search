@@ -4,6 +4,8 @@ set -eu
 cd "$(dirname "$0")/.."
 swift build -c release --product TriggerSearch >/dev/null
 EXE=".build/release/TriggerSearch"
+VERSION=$(cat VERSION)
+BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo 1)
 APP="build/Trigger Search.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -22,8 +24,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 	<key>CFBundleName</key><string>Trigger Search</string>
 	<key>CFBundleDisplayName</key><string>Trigger Search</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>0.1.0</string>
-	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleShortVersionString</key><string>$VERSION</string>
+	<key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
 	<key>LSMinimumSystemVersion</key><string>14.0</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.music</string>
 	<key>NSHighResolutionCapable</key><true/>

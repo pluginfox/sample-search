@@ -67,6 +67,21 @@ swift test                       # classifier, scanner, exporter and metadata-mi
 swift scripts/make-icon.swift Resources && iconutil -c icns Resources/AppIcon.iconset -o Resources/AppIcon.icns  # regenerate the icon
 ```
 
+## Updates and releases
+
+Trigger Search › Check for Updates… compares the app's version with the latest release on
+GitHub and offers the download. It also checks quietly once a day at launch (toggle in the Folders
+sheet). To publish a release:
+
+```sh
+echo 0.3.0 > VERSION            # bump
+./scripts/make-release.sh       # builds, zips build/Trigger-Search-0.3.0.zip, tags v0.3.0
+git push origin main v0.3.0
+```
+
+Then create the GitHub release for that tag and attach the zip. The app is ad-hoc signed, so on
+first launch of a downloaded copy right-click › Open (or `xattr -dr com.apple.quarantine`).
+
 ## Window
 
 First launch opens at 1280×780 (minimum 900×500) with the sidebar at ~220pt and the inspector at
