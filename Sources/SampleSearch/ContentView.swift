@@ -131,7 +131,7 @@ struct SidebarView: View {
     var body: some View {
         List(selection: $model.filter) {
             Section("Library") {
-                row("All Samples", "square.grid.2x2", model.visibleFiles.count, .all)
+                row("All Samples", "square.grid.2x2", model.allRows.count, .all)
                 row("Favourites", "star.fill", model.favoriteCount, .favorites)
                 row("Untagged", "tag.slash", model.untaggedCount, .untagged)
             }
@@ -402,7 +402,7 @@ struct FileTableView: View {
         }
         .safeAreaInset(edge: .bottom) {
             HStack {
-                Text("\(rows.count) of \(model.visibleFiles.count) samples")
+                Text("\(rows.count) of \(model.allRows.count) samples")
                 if model.isSearching {
                     if let fallback = model.searchFallback {
                         Text("· no \(model.mode.noun) matched, showing \(fallback.noun)")

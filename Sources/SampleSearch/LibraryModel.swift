@@ -68,6 +68,39 @@ struct Row: Identifiable, Hashable {
     let pack: String
     /// Effective kit name, empty when the pack has no kit layer.
     let kit: String
+    /// Lower-cased text the search box matches against, built once.
+    let haystack: String
+    /// Case-folded, number-aware key so "Snare 2" sorts before "Snare 10".
+    let nameKey: String
+
+    init(file: TCIFile, meta: ItemMeta, vendor: String, pack: String, kit: String) {
+        self.file = file
+        self.meta = meta
+        self.vendor = vendor
+        self.pack = pack
+        self.kit = kit
+        let effect = file.kind == .effect ? (meta.effectCategory ?? file.effectCategory ?? .other) : nil
+        let categoryName = effect?.singularName ?? (meta.category ?? file.category).singularName
+        haystack = [file.name, file.folder, pack, kit, categoryName, (meta.source ?? file.source).displayName,
+                    meta.tags.joined(separator: ", "), file.variant ?? "", vendor, meta.notes]
+            .joined(separator: " ").lowercased()
+        nameKey = Row.naturalKey(file.name)
+    }
+
+    /// Lower-cases and zero-pads digit runs so plain string comparison gives natural order.
+    static func naturalKey(_ text: String) -> String {
+        var out = ""
+        out.reserveCapacity(text.count + 8)
+        var digits = ""
+        func flush() {
+            if !digits.isEmpty { out += String(repeating: "0", count: max(0, 10 - digits.count)) + digits; digits = "" }
+        }
+        for ch in text.lowercased() {
+            if ch.isNumber { digits.append(ch) } else { flush(); out.append(ch) }
+        }
+        flush()
+        return out
+    }
 
     var id: String { file.path }
     var name: String { file.name }
@@ -97,11 +130,13 @@ struct Row: Identifiable, Hashable {
 final class LibraryModel: ObservableObject {
     static let shared = LibraryModel()
 
-    @Published private(set) var files: [TCIFile] = []
-    @Published private(set) var data: LibraryData
+    @Published private(set) var files: [TCIFile] = [] { didSet { rebuildRows() } }
+    @Published private(set) var data: LibraryData { didSet { rebuildRows() } }
     @Published var searchText = "" {
         didSet {
-            if searchText != oldValue { pruneSelectionToVisible() }
+            guard searchText != oldValue else { return }
+            refilter()
+            pruneSelectionToVisible()
             scheduleSelectionSync()
         }
     }
@@ -110,14 +145,41 @@ final class LibraryModel: ObservableObject {
             // Choosing a sidebar group is a new starting point: drop any active search so the
             // group is what you see, not the search hits.
             if filter != oldValue {
-                if isSearching { searchText = "" }
+                if isSearching { searchText = "" }   // refilters via its own observer
+                refilter()
                 if !selection.isEmpty { selection = [] }
             }
             scheduleSelectionSync()
         }
     }
     @Published var selection: Set<String> = []
-    @Published var sortOrder: [KeyPathComparator<Row>] = [KeyPathComparator(\Row.name)]
+    @Published var sortOrder: [KeyPathComparator<Row>] = [KeyPathComparator(\Row.name)] {
+        didSet { refilter() }
+    }
+
+    // MARK: Cached derived data (rebuilt only when inputs change; see rebuildRows / refilter)
+
+    /// Every file as a row, all modes.
+    private var everyRow: [Row] = []
+    /// Rows in the current mode.
+    @Published private(set) var allRows: [Row] = []
+    /// What the table shows: sidebar filter or search applied, sorted.
+    @Published private(set) var filteredRows: [Row] = []
+    /// Set while a search is showing results from another library than the current mode.
+    @Published private(set) var searchFallback: LibraryMode?
+    private var filteredByID: [String: Row] = [:]
+    @Published private(set) var instrumentCount = 0
+    @Published private(set) var oneShotCount = 0
+    @Published private(set) var effectCount = 0
+    @Published private(set) var favoriteCount = 0
+    @Published private(set) var untaggedCount = 0
+    @Published private(set) var categoryCounts: [(DrumCategory, Int)] = []
+    @Published private(set) var effectCategoryCounts: [(EffectCategory, Int)] = []
+    @Published private(set) var sourceCounts: [(SourceType, Int)] = []
+    @Published private(set) var packCounts: [(String, Int)] = []
+    @Published private(set) var vendorCounts: [(String, Int)] = []
+    @Published private(set) var tagCounts: [(String, Int)] = []
+    private var kitsByPack: [String: [(String, Int)]] = [:]
     @Published private(set) var isScanning = false
     @Published var lastScan: Date?
     @Published var showFolders = false
@@ -127,6 +189,7 @@ final class LibraryModel: ObservableObject {
         didSet {
             UserDefaults.standard.set(mode.rawValue, forKey: "libraryMode")
             guard mode != oldValue else { return }
+            rebuildRows()
             // A mode switch is a fresh start too: clear the search and selection.
             if isSearching { searchText = "" }
             if !selection.isEmpty { selection = [] }
@@ -167,6 +230,7 @@ final class LibraryModel: ObservableObject {
         autoExport = UserDefaults.standard.object(forKey: "autoExport") as? Bool ?? true
         mirrorSelection = UserDefaults.standard.object(forKey: "mirrorSelection") as? Bool ?? true
         if !hasAnyRoots { showWelcome = true }
+        rebuildRows()
     }
 
     /// Preference keys the app owns. Library data (tags, favourites, notes, folders) lives in
@@ -193,14 +257,10 @@ final class LibraryModel: ObservableObject {
     }
 
     /// Files that match the current mode.
-    var visibleFiles: [TCIFile] { files.filter { mode.includes($0.kind) } }
-
-    var instrumentCount: Int { files.filter { $0.kind == .instrument }.count }
-    var oneShotCount: Int { files.filter { $0.kind == .oneShot }.count }
-    var effectCount: Int { files.filter { $0.kind == .effect }.count }
+    var visibleFiles: [TCIFile] { allRows.map(\.file) }
 
     private func pruneSelection() {
-        let visible = Set(visibleFiles.map(\.path))
+        let visible = Set(allRows.map(\.id))
         selection = selection.filter { visible.contains($0) }
     }
 
@@ -208,15 +268,13 @@ final class LibraryModel: ObservableObject {
     /// accumulate behind a new selection.
     private func pruneSelectionToVisible() {
         guard !selection.isEmpty else { return }
-        let visible = Set(filteredRows.map(\.id))
-        let kept = selection.filter { visible.contains($0) }
+        let kept = selection.filter { filteredByID[$0] != nil }
         if kept.count != selection.count { selection = kept }
     }
 
     /// Only rows that are actually visible count as selected.
     var selectedRows: [Row] {
-        let byID = Dictionary(uniqueKeysWithValues: filteredRows.map { ($0.id, $0) })
-        return selection.compactMap { byID[$0] }.sorted { $0.name < $1.name }
+        selection.compactMap { filteredByID[$0] }.sorted { $0.nameKey < $1.nameKey }
     }
 
     /// Plays the selected one-shot (space bar / Sample menu).
@@ -268,56 +326,106 @@ final class LibraryModel: ObservableObject {
 
     // MARK: - Rows and filtering
 
-    var allRows: [Row] {
-        visibleFiles.map { Row(file: $0, meta: data.items[$0.path] ?? ItemMeta(),
-                               vendor: data.vendors[$0.packKey] ?? $0.vendor ?? "",
-                               pack: data.packNames[$0.packKey] ?? $0.pack,
-                               kit: (data.items[$0.path]?.kit) ?? $0.kitPath.flatMap { data.kitNames[$0] } ?? $0.kit ?? "") }
+    private func makeRow(_ file: TCIFile) -> Row {
+        let meta = data.items[file.path] ?? ItemMeta()
+        return Row(file: file, meta: meta,
+                   vendor: data.vendors[file.packKey] ?? file.vendor ?? "",
+                   pack: data.packNames[file.packKey] ?? file.pack,
+                   kit: meta.kit ?? file.kitPath.flatMap { data.kitNames[$0] } ?? file.kit ?? "")
+    }
+
+    /// Rebuilds every cached row and count. Called when files, metadata or the mode change.
+    private func rebuildRows() {
+        everyRow = files.map(makeRow)
+        allRows = everyRow.filter { mode.includes($0.kind) }
+        instrumentCount = 0; oneShotCount = 0; effectCount = 0
+        for row in everyRow {
+            switch row.kind {
+            case .instrument: instrumentCount += 1
+            case .oneShot: oneShotCount += 1
+            case .effect: effectCount += 1
+            }
+        }
+        var favorites = 0, untagged = 0
+        var categories: [DrumCategory: Int] = [:], effects: [EffectCategory: Int] = [:], sources: [SourceType: Int] = [:]
+        var packs: [String: Int] = [:], vendors: [String: Int] = [:], tags: [String: Int] = [:]
+        var kits: [String: [String: Int]] = [:]
+        for row in allRows {
+            if row.favorite { favorites += 1 }
+            if row.tags.isEmpty { untagged += 1 }
+            if let e = row.effectCategory { effects[e, default: 0] += 1 } else { categories[row.category, default: 0] += 1 }
+            if !row.isEffect { sources[row.source, default: 0] += 1 }
+            packs[row.pack, default: 0] += 1
+            vendors[row.vendor.isEmpty ? "Unknown" : row.vendor, default: 0] += 1
+            for tag in row.tags { tags[tag, default: 0] += 1 }
+            if !row.kit.isEmpty { kits[row.pack, default: [:]][row.kit, default: 0] += 1 }
+        }
+        favoriteCount = favorites
+        untaggedCount = untagged
+        categoryCounts = DrumCategory.allCases.compactMap { c in categories[c].map { (c, $0) } }
+        effectCategoryCounts = EffectCategory.allCases.compactMap { e in effects[e].map { (e, $0) } }
+        sourceCounts = SourceType.allCases.compactMap { s in sources[s].map { (s, $0) } }
+        let byName: ((String, Int), (String, Int)) -> Bool = { $0.0.localizedCaseInsensitiveCompare($1.0) == .orderedAscending }
+        packCounts = packs.map { ($0.key, $0.value) }.sorted(by: byName)
+        vendorCounts = vendors.map { ($0.key, $0.value) }.sorted(by: byName)
+        tagCounts = tags.map { ($0.key, $0.value) }.sorted { $0.1 != $1.1 ? $0.1 > $1.1 : byName($0, $1) }
+        kitsByPack = kits.mapValues { $0.map { ($0.key, $0.value) }.sorted(by: byName) }
+        refilter()
     }
 
     /// True while a search is active: the sidebar filter is ignored and only the mode narrows results.
     var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
 
-    /// Rows of every file the given mode includes.
-    private func rows(in mode: LibraryMode) -> [Row] {
-        files.filter { mode.includes($0.kind) }.map { Row(file: $0, meta: data.items[$0.path] ?? ItemMeta(),
-                                                          vendor: data.vendors[$0.packKey] ?? $0.vendor ?? "",
-                                                          pack: data.packNames[$0.packKey] ?? $0.pack,
-                                                          kit: (data.items[$0.path]?.kit) ?? $0.kitPath.flatMap { data.kitNames[$0] } ?? $0.kit ?? "") }
-    }
-
     private func search(_ rows: [Row], terms: [String]) -> [Row] {
-        rows.filter { row in
-            let haystack = [row.name, row.folder, row.pack, row.kit, row.categoryName, row.sourceName, row.tagsJoined, row.variant, row.vendor, row.notes]
-                .joined(separator: " ").lowercased()
-            return terms.allSatisfy { haystack.contains($0) }
-        }
+        rows.filter { row in terms.allSatisfy { row.haystack.contains($0) } }
     }
 
-    /// Search result plus the library it came from when the current mode had no matches.
-    struct SearchOutcome {
+    /// Recomputes the table rows from the cached rows. Called when search, filter or sort change.
+    private func refilter() {
+        let terms = searchText.lowercased().split(separator: " ").map(String.init)
         var rows: [Row]
         var fallback: LibraryMode?
+        if terms.isEmpty {
+            rows = allRows.filter { matches(filter, row: $0) }
+        } else {
+            rows = search(allRows, terms: terms)
+            if rows.isEmpty {
+                for stage in mode.searchFallbacks {
+                    let hits = search(everyRow.filter { stage.includes($0.kind) }, terms: terms)
+                    if !hits.isEmpty { rows = hits; fallback = stage; break }
+                }
+            }
+        }
+        filteredRows = sorted(rows)
+        searchFallback = fallback
+        filteredByID = Dictionary(uniqueKeysWithValues: filteredRows.map { ($0.id, $0) })
     }
 
-    var searchOutcome: SearchOutcome {
-        let terms = searchText.lowercased().split(separator: " ").map(String.init)
-        guard !terms.isEmpty else {
-            return SearchOutcome(rows: allRows.filter { matches(filter, row: $0) }.sorted(using: sortOrder), fallback: nil)
+    /// Sorts by the table's first comparator using precomputed string keys (natural order for
+    /// text), ties broken by name. Far cheaper than the locale-aware comparator SwiftUI supplies.
+    private func sorted(_ rows: [Row]) -> [Row] {
+        guard let comparator = sortOrder.first else { return rows.sorted { $0.nameKey < $1.nameKey } }
+        let keyPath = comparator.keyPath
+        let reverse = comparator.order == .reverse
+        let keys = rows.map { Self.sortKey(for: $0[keyPath: keyPath]) }
+        let order = rows.indices.sorted { a, b in
+            if keys[a] != keys[b] { return reverse ? keys[a] > keys[b] : keys[a] < keys[b] }
+            return rows[a].nameKey < rows[b].nameKey
         }
-        let own = search(allRows, terms: terms)
-        if !own.isEmpty { return SearchOutcome(rows: own.sorted(using: sortOrder), fallback: nil) }
-        for stage in mode.searchFallbacks {
-            let hits = search(rows(in: stage), terms: terms)
-            if !hits.isEmpty { return SearchOutcome(rows: hits.sorted(using: sortOrder), fallback: stage) }
-        }
-        return SearchOutcome(rows: [], fallback: nil)
+        return order.map { rows[$0] }
     }
 
-    var filteredRows: [Row] { searchOutcome.rows }
-
-    /// Set while a search is showing results from another library than the current mode.
-    var searchFallback: LibraryMode? { searchOutcome.fallback }
+    private static func sortKey(for value: Any) -> String {
+        switch value {
+        case let text as String: return Row.naturalKey(text)
+        case let number as Int: return String(format: "%012d", number)
+        case let category as DrumCategory: return String(format: "%03d", DrumCategory.allCases.firstIndex(of: category) ?? 0)
+        case let source as SourceType: return String(format: "%03d", SourceType.allCases.firstIndex(of: source) ?? 0)
+        case let kind as FileKind: return kind.rawValue
+        case let date as Date: return String(format: "%020.3f", date.timeIntervalSince1970)
+        default: return String(describing: value)
+        }
+    }
 
     private func matches(_ filter: SidebarFilter?, row: Row) -> Bool {
         switch filter {
@@ -334,55 +442,17 @@ final class LibraryModel: ObservableObject {
         }
     }
 
-    var favoriteCount: Int { allRows.filter(\.favorite).count }
-    var untaggedCount: Int { allRows.filter { $0.tags.isEmpty }.count }
-
-    var categoryCounts: [(DrumCategory, Int)] {
-        var counts: [DrumCategory: Int] = [:]
-        for row in allRows { counts[row.category, default: 0] += 1 }
-        return DrumCategory.allCases.compactMap { c in counts[c].map { (c, $0) } }
-    }
-
-    var effectCategoryCounts: [(EffectCategory, Int)] {
-        var counts: [EffectCategory: Int] = [:]
-        for row in allRows { if let e = row.effectCategory { counts[e, default: 0] += 1 } }
-        return EffectCategory.allCases.compactMap { e in counts[e].map { (e, $0) } }
-    }
-
     func setEffectCategory(_ category: EffectCategory?, for ids: Set<String>) {
-        let byPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0) })
-        update(ids) { $0.effectCategory = category }
-        for id in ids where (byPath[id]?.effectCategory ?? .other) == category {
-            update([id]) { $0.effectCategory = nil }
-        }
-    }
-
-    var sourceCounts: [(SourceType, Int)] {
-        var counts: [SourceType: Int] = [:]
-        for row in allRows { counts[row.source, default: 0] += 1 }
-        return SourceType.allCases.compactMap { s in counts[s].map { (s, $0) } }
+        // An override equal to the auto-detected value is dropped rather than stored.
+        updateEach(ids) { file, meta in meta.effectCategory = (file?.effectCategory ?? .other) == category ? nil : category }
     }
 
     func setSource(_ source: SourceType?, for ids: Set<String>) {
-        let byPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0) })
-        update(ids) { $0.source = source }
-        for id in ids where byPath[id]?.source == source {
-            update([id]) { $0.source = nil }   // matches the guess: no override needed
-        }
-    }
-
-    var packCounts: [(String, Int)] {
-        var counts: [String: Int] = [:]
-        for row in allRows { counts[row.pack, default: 0] += 1 }
-        return counts.sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+        updateEach(ids) { file, meta in meta.source = file?.source == source ? nil : source }
     }
 
     /// Kits inside a pack with their counts, sorted by name. Empty when the pack has no kit layer.
-    func kitCounts(inPack pack: String) -> [(String, Int)] {
-        var counts: [String: Int] = [:]
-        for row in allRows where row.pack == pack && !row.kit.isEmpty { counts[row.kit, default: 0] += 1 }
-        return counts.sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
-    }
+    func kitCounts(inPack pack: String) -> [(String, Int)] { kitsByPack[pack] ?? [] }
 
     /// Assigns the given files to a kit (empty clears the manual assignment).
     func setKit(_ raw: String, for ids: Set<String>) {
@@ -400,9 +470,11 @@ final class LibraryModel: ObservableObject {
     func setKitName(_ raw: String, forKitsOf ids: Set<String>) {
         let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let keys = Set(files.filter { ids.contains($0.path) }.compactMap(\.kitPath))
+        var names = data.kitNames
         for key in keys {
-            if value.isEmpty { data.kitNames.removeValue(forKey: key) } else { data.kitNames[key] = value }
+            if value.isEmpty { names.removeValue(forKey: key) } else { names[key] = value }
         }
+        data.kitNames = names
         persist()
         if case .kit(let pack, _) = filter ?? .all, let file = files.first(where: { keys.contains($0.kitPath ?? "") }) {
             filter = .kit(pack: pack, kit: data.kitNames[file.kitPath!] ?? file.kit ?? "")
@@ -422,12 +494,6 @@ final class LibraryModel: ObservableObject {
         let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !manual.isEmpty { setKit(name, for: manual) }
         if !folderBased.isEmpty { setKitName(name, forKitsOf: folderBased) }
-    }
-
-    var vendorCounts: [(String, Int)] {
-        var counts: [String: Int] = [:]
-        for row in allRows { counts[row.vendor.isEmpty ? "Unknown" : row.vendor, default: 0] += 1 }
-        return counts.sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
     }
 
     /// Sets (or clears, when empty) the vendor for every file in the packs of the given files.
@@ -450,16 +516,12 @@ final class LibraryModel: ObservableObject {
     private func setPackOverride(_ raw: String, keyPath: WritableKeyPath<LibraryData, [String: String]>, forPacksOf ids: Set<String>) {
         let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let keys = Set(files.filter { ids.contains($0.path) }.map(\.packKey))
+        var overrides = data[keyPath: keyPath]
         for key in keys {
-            if value.isEmpty { data[keyPath: keyPath].removeValue(forKey: key) } else { data[keyPath: keyPath][key] = value }
+            if value.isEmpty { overrides.removeValue(forKey: key) } else { overrides[key] = value }
         }
+        data[keyPath: keyPath] = overrides
         persist()
-    }
-
-    var tagCounts: [(String, Int)] {
-        var counts: [String: Int] = [:]
-        for row in allRows { for tag in row.tags { counts[tag, default: 0] += 1 } }
-        return counts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
     }
 
     var allTags: [String] { tagCounts.map(\.0) }
@@ -523,16 +585,26 @@ final class LibraryModel: ObservableObject {
     }
 
     private func update(_ ids: Set<String>, triggersExport: Bool = true, _ change: (inout ItemMeta) -> Void) {
+        updateEach(ids, triggersExport: triggersExport) { _, meta in change(&meta) }
+    }
+
+    /// Applies a change to the metadata of each file, writing `data` once so the cached rows are
+    /// rebuilt a single time however many files are involved.
+    private func updateEach(_ ids: Set<String>, triggersExport: Bool = true, _ change: (TCIFile?, inout ItemMeta) -> Void) {
+        guard !ids.isEmpty else { return }
         let byPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0) })
+        var items = data.items
         for id in ids {
-            var meta = data.items[id] ?? ItemMeta()
-            if let file = byPath[id] {
+            var meta = items[id] ?? ItemMeta()
+            let file = byPath[id]
+            if let file {
                 meta.fileName = file.url.lastPathComponent
                 meta.fileSize = file.size
             }
-            change(&meta)
-            if meta.isEmpty { data.items.removeValue(forKey: id) } else { data.items[id] = meta }
+            change(file, &meta)
+            if meta.isEmpty { items.removeValue(forKey: id) } else { items[id] = meta }
         }
+        data.items = items
         persist(triggersExport: triggersExport)
     }
 
@@ -587,16 +659,8 @@ final class LibraryModel: ObservableObject {
     }
 
     func setCategory(_ category: DrumCategory?, for ids: Set<String>) {
-        let byPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0) })
-        update(ids) { meta in
-            // Clear the override when it matches the auto-detected value.
-            meta.category = category
-        }
-        for id in ids {
-            if let file = byPath[id], data.items[id]?.category == file.category {
-                update([id]) { $0.category = nil }
-            }
-        }
+        // An override equal to the auto-detected value is dropped rather than stored.
+        updateEach(ids) { file, meta in meta.category = file?.category == category ? nil : category }
     }
 
     /// Copies the full paths of the given files, one per line, for pasting into Trigger's open dialog.
