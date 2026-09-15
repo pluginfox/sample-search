@@ -52,8 +52,7 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 - **Trigger browser folder** (File › Update Trigger Browser Folder, ⌘E): writes a folder of symlinks
   (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
   `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
-  Point Trigger 2's built-in browser at it and your tags and kits are navigable inside the plugin,
-  which matters in hosts such as Logic (AU) where file drops never reach the plugin window.
+  Point Trigger 2's built-in browser at it and your tags and kits are navigable inside the plugin.
   The files currently selected in the app are also linked directly at the top level of that folder,
   updated a moment after the selection changes. With nothing selected, the whole group the sidebar
   or search is showing (a pack, kit, tag, category, search hits… but not "All Samples") is mirrored
