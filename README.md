@@ -6,28 +6,55 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 
 ## Features
 
-- **Modes** in the toolbar: *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`), *All Trigger*
-  (both) and *Effects*, a completely separate library of `.wav` / `.aiff`
+### Modes in the Toolbar
+**Trigger/Drum Samples** - *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`), *All Trigger*
+  (both).
+  
+**Effects** - a completely separate library of `.wav` / `.aiff`
   sound effects scanned from its own folders, classified by type from names, and never written to the
-  Trigger browser folder. The types (risers, downlifters, sub drops, impacts, hits, cymbals, whooshes,
-  drones, reverses by default) are editable: "Edit Types…" in the sidebar or inspector lets you rename,
-  reorder, add or remove them and change their icon and keywords; matching runs top to bottom.
+  Trigger browser folder.
+  The types (risers, downlifters, sub drops, impacts, etc.) are editable: "Edit Types…" in the sidebar.
+  The inspector lets you rename, reorder, add or remove them and change their icon and keywords.
   Effects share tags, favourites, notes, packs, kits, vendors, preview and search with the rest.
+  
   The mode is remembered between launches.
-- **One-shot preview**: play button on each row and in the inspector, Space to play the selection,
-  ⌘. to stop, and an optional "Play on Select" toggle for quick auditioning. The inspector shows
+
+### Trigger Browser Folder
+**Organise your samples**
+- Writes a folder of symlinks (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
+  `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
+  
+- Point Trigger 2's built-in browser at it and your tags and kits are navigable inside the plugin.
+
+- Any samples currently selected in the Sample Search are also linked directly at the top level of that folder, updated a moment after the selection changes. Trigger 2 caches its directory listing, so **click its refresh** button after making a new selection to update.
+  
+- With nothing selected, the whole group the sidebar or search is showing (a pack, kit, tag, category, search hits… but not "All Samples") is mirrored instead, capped at 2000 links.
+
+- The folder is rebuilt automatically a couple of seconds after any tag, favourite, kit, pack or vendor change and after each rescan.
+
+- Both the automatic rebuild and the selection mirroring can be switched off in the Folders sheet. It is
+  rebuilt from scratch each time and is only ever cleared if it contains the marker file the app wrote.
+- Effects are never written to it.
+- **Copy Path** (⌘C), and **Reveal in Finder** (⇧⌘R).
+  
+### One-shot preview
+- Play button on each row and in the inspector, Space to play the selection, ⌘. to stop.
+- Optional "Play on Select" toggle for quick auditioning. The inspector shows
   duration, sample rate, channels and bit depth. (`.tci` files cannot be played outside Trigger.)
 - **Scans any folders you choose** for those files (iCloud Drive folders work). "Find TCI Files
   Automatically" uses Spotlight to suggest folders across the whole Mac.
-- **Auto-metadata from names**: category (kick / snare / tom / hi-hat / cymbal / percussion),
-  source (Direct / Overheads / Rooms / FX, from tokens such as `OH`, `RM`, `Room`, `Amb`, `FX`;
-  Direct by default), pack, sub-folder, and variant suffix such as `SSDR`, `NRG`, `Z1`, `Z3`.
-  Category and source can be overridden per file. The pack is the first folder under a library root, unless
+### Auto-metadata from names
+- **Category** (kick / snare / tom / hi-hat / cymbal / percussion),
+- **Source** (Direct / Overheads / Rooms / FX, from tokens such as `OH`, `RM`, `Room`, `Amb`, `FX`;
+  Direct by default)
+- **Pack**, **sub-folder**, and **variant suffix** such as `SSDR`, `NRG`, `Z1`, `Z3`.
+- Category and source can be overridden per file.
+- The pack is the first folder under a library root, unless
   that folder is really a category ("Snares", "01a Kick"), in which case the root is the pack.
-  Inside a pack, the next folder is a **kit** unless it is a category folder, so a pack laid out as
-  "Pack/Kit A/Kick" shows its kits nested under the pack in the sidebar. Wrapper folders such
-  as "TCI" or "Samples" are ignored. Pack names can be renamed in the inspector or by
-  right-clicking them in the sidebar; the name applies to every file in that folder.
+- Inside a pack, the next folder is a **kit** unless it is a category folder, so a pack laid out as
+  "Pack/Kit A/Kick" shows its kits nested under the pack in the sidebar.
+- Wrapper folders such as "TCI" or "Samples" are ignored.
+- Pack names can be renamed in the inspector or by right-clicking them in the sidebar; the name applies to every file in that folder.
 - **Kits are also assignable by hand**: select any files (across folders), type a kit name in the
   inspector or click an existing kit chip, and they group under that kit in the sidebar. Useful for
   libraries like the stock Trigger 2 one where every kit lives in one folder.
@@ -48,21 +75,7 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 - **Drag and drop for one-shots and effects**: drag WAV/AIFF rows, or the drag tile in the inspector,
   onto a DAW track or sampler. Nothing is ever moved or renamed. Trigger 2 does not accept file drops,
   so `.tci` files have no drag tile; use the browser folder below instead.
-- **Trigger browser folder** (File › Update Trigger Browser Folder, ⌘E): writes a folder of symlinks
-  (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
-  `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
-  Point Trigger 2's built-in browser at it and your tags and kits are navigable inside the plugin.
-  The files currently selected in the app are also linked directly at the top level of that folder,
-  updated a moment after the selection changes. With nothing selected, the whole group the sidebar
-  or search is showing (a pack, kit, tag, category, search hits… but not "All Samples") is mirrored
-  instead, capped at 2000 links. Trigger 2 caches its directory listing, so click its refresh button
-  after changing the selection to see the new links. The folder is rebuilt automatically a couple of
-  seconds after any tag, favourite, kit, pack or vendor change and after each rescan; both the
-  automatic rebuild and the selection mirroring can be switched off in the Folders sheet. It is
-  rebuilt from scratch each time and is only ever cleared if it contains the marker file the app wrote.
-  Effects are never written to it.
-- **Copy Path** (⌘C) for pasting into Trigger's open dialog with ⇧⌘G, and **Reveal in Finder** (⇧⌘R).
-  Metadata follows a file that you move to a different folder, as long as its name and size still match.
+- Metadata follows a file that you move to a different folder, as long as its name and size still match.
 
 Tags, favourites and the folder list are stored in
 `~/Library/Application Support/Sample Search/library.json`.
