@@ -86,7 +86,10 @@ echo 0.3.0 > VERSION            # bump
 git push origin main v0.3.0
 ```
 
-Then create the GitHub release for that tag and attach the zip. The app is ad-hoc signed, so on
+Then create the GitHub release for that tag and attach the zip. If the repository is private, enter
+a GitHub token (fine-grained, read access to Contents; or classic with `repo`) in the Folders sheet
+under GitHub; it is stored in the Keychain and sent only to api.github.com. Downloads open in the
+browser, where your GitHub login applies. The app is ad-hoc signed, so on
 first launch of a downloaded copy right-click › Open (or `xattr -dr com.apple.quarantine`).
 
 ## Window
