@@ -17,7 +17,7 @@ final class ScannerTests: XCTestCase {
 
     func testScanPicksUpInstrumentsAndOneShots() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-scan-\(UUID().uuidString)")
-        let kicks = root.appendingPathComponent("My Pack/Kicks")
+        let kicks = root.appendingPathComponent("Pack L/Kicks")
         try FileManager.default.createDirectory(at: kicks, withIntermediateDirectories: true)
         for name in ["Kick A SSDR.tci", "Kick 01.wav", "Kick 02.AIFF", "Kick 03.aif", "readme.txt", "cover.png"] {
             try Data("x".utf8).write(to: kicks.appendingPathComponent(name))
@@ -28,20 +28,20 @@ final class ScannerTests: XCTestCase {
         XCTAssertEqual(files.map(\.name), ["Kick 01", "Kick 02", "Kick 03", "Kick A SSDR"])
         XCTAssertEqual(files.map(\.kind), [.oneShot, .oneShot, .oneShot, .instrument])
         XCTAssertEqual(files.map(\.formatName), ["WAV", "AIFF", "AIF", "TCI"])
-        XCTAssertEqual(Set(files.map(\.pack)), ["My Pack"])
-        XCTAssertEqual(Set(files.map(\.folder)), ["My Pack/Kicks"])
+        XCTAssertEqual(Set(files.map(\.pack)), ["Pack L"])
+        XCTAssertEqual(Set(files.map(\.folder)), ["Pack L/Kicks"])
         XCTAssertEqual(Set(files.map(\.category)), [.kick])
-        XCTAssertEqual(Set(files.map(\.packPath)), [root.standardizedFileURL.path + "/My Pack"])
+        XCTAssertEqual(Set(files.map(\.packPath)), [root.standardizedFileURL.path + "/Pack L"])
     }
 
     func testCollectionRootKeepsDrumNamedFoldersAsPacks() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-coll-\(UUID().uuidString)")
         let layout: [String: [String]] = [
-            "Alpha Snares 1/Brass Tuning 1": ["BB Snare 1.tci"],
-            "Beta_s Organized Samples/Crash Samples": ["Crash A.tci"],
-            "Vendor P5": ["P5 Kick.tci"],
-            "Pack J Kicks": ["DK 1.tci"],
-            "Some Drummer/Kit A": ["AG Snare.tci"],
+            "Pack H Snares/Kit H": ["Snare H1.tci"],
+            "Pack I_s Samples/Crash Samples": ["Crash A.tci"],
+            "Pack F": ["Kick F1.tci"],
+            "Pack J Kicks": ["Kick J1.tci"],
+            "Pack G/Kit A": ["Snare G1.tci"],
         ]
         for (dir, names) in layout {
             let d = root.appendingPathComponent(dir)
@@ -51,25 +51,25 @@ final class ScannerTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         let files = SampleSearchKit.Scanner.scan(roots: [root])
         let packs = Dictionary(uniqueKeysWithValues: files.map { ($0.name, $0.pack) })
-        XCTAssertEqual(packs["BB Snare 1"], "Alpha Snares 1")
-        XCTAssertEqual(packs["Crash A"], "Beta_s Organized Samples")
-        XCTAssertEqual(packs["DK 1"], "Pack J Kicks")
-        XCTAssertEqual(packs["P5 Kick"], "Vendor P5")
-        XCTAssertEqual(files.first { $0.name == "BB Snare 1" }?.kit, "Brass Tuning 1")
+        XCTAssertEqual(packs["Snare H1"], "Pack H Snares")
+        XCTAssertEqual(packs["Crash A"], "Pack I_s Samples")
+        XCTAssertEqual(packs["Kick J1"], "Pack J Kicks")
+        XCTAssertEqual(packs["Kick F1"], "Pack F")
+        XCTAssertEqual(files.first { $0.name == "Snare H1" }?.kit, "Kit H")
         XCTAssertNil(files.first { $0.name == "Crash A" }?.kit, "category-named subfolder is not a kit")
-        XCTAssertEqual(files.first { $0.name == "AG Snare" }?.kit, "Kit A")
+        XCTAssertEqual(files.first { $0.name == "Snare G1" }?.kit, "Kit A")
 
         // A root whose subfolders are mostly categories is itself the pack.
-        XCTAssertTrue(SampleSearchKit.Scanner.rootIsPackDecision(rootName: "TriggerLibrary",
-            firstLevelFolders: ["Trigger Snares", "Trigger Kicks", "Trigger Toms", "Trigger Deluxe"]))
+        XCTAssertTrue(SampleSearchKit.Scanner.rootIsPackDecision(rootName: "Pack N",
+            firstLevelFolders: ["Snares", "Kicks", "Toms", "Deluxe"]))
         XCTAssertFalse(SampleSearchKit.Scanner.rootIsPackDecision(rootName: "Trigger Samples",
-            firstLevelFolders: ["Alpha Snares 1", "Beta_s Organized Samples", "Vendor P5", "Pack J Kicks", "Some Drummer"]))
-        XCTAssertFalse(Classifier.category(in: "Beta_s Organized Samples") != nil, "'s' alone is not a snare")
+            firstLevelFolders: ["Pack H Snares", "Pack I_s Samples", "Pack F", "Pack J Kicks", "Pack G"]))
+        XCTAssertFalse(Classifier.category(in: "Pack I_s Samples") != nil, "'s' alone is not a snare")
     }
 
     func testEffectsRootsScanAudioAsEffects() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-fx-\(UUID().uuidString)")
-        let dir = root.appendingPathComponent("Cinematic Pack/Risers")
+        let dir = root.appendingPathComponent("Pack K/Risers")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         for name in ["808 Sub Drop.wav", "Big Riser 01.wav", "Crash Swell.wav", "Impact Boom.aiff", "Reverse Cymbal.wav", "Snare Hit.wav", "notes.tci"] {
             try Data("x".utf8).write(to: dir.appendingPathComponent(name))
@@ -86,7 +86,7 @@ final class ScannerTests: XCTestCase {
         XCTAssertNil(Classifier.effectType(name: "Mystery 01", folders: [], types: custom))
         XCTAssertEqual(EffectType.resolve("swell", in: custom).name, "Swells")
         XCTAssertEqual(EffectType.resolve("nope", in: custom).id, "other")
-        XCTAssertEqual(Set(files.map(\.pack)), ["Cinematic Pack"])
+        XCTAssertEqual(Set(files.map(\.pack)), ["Pack K"])
     }
 
     func testPackAndKitInference() {
@@ -94,24 +94,24 @@ final class ScannerTests: XCTestCase {
             SampleSearchKit.Scanner.inferLayout(rootPath: "/x/" + root, rootName: root, folders: folders)
         }
         // Category folders directly under the root: root is the pack, no kit.
-        XCTAssertEqual(layout("TriggerLibrary", ["Trigger Snares", "Snare05"]),
-                       SampleSearchKit.Scanner.Layout(pack: "TriggerLibrary", packPath: "/x/TriggerLibrary"))
-        XCTAssertEqual(layout("Acme Pack TCI", ["01a Kick (Gretsch)", "MIXED"]),
-                       SampleSearchKit.Scanner.Layout(pack: "Acme Pack TCI", packPath: "/x/Acme Pack TCI"))
+        XCTAssertEqual(layout("Pack N", ["Snares", "Snare05"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Pack N", packPath: "/x/Pack N"))
+        XCTAssertEqual(layout("Pack A TCI", ["01a Kick", "MIXED"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Pack A TCI", packPath: "/x/Pack A TCI"))
         // Vendor-named root with kit folders inside.
-        XCTAssertEqual(layout("Acme Samples Historic Edition", ["The Hall", "Kick"]),
-                       SampleSearchKit.Scanner.Layout(pack: "Acme Samples Historic Edition", packPath: "/x/Acme Samples Historic Edition",
-                             kit: "The Hall", kitPath: "/x/Acme Samples Historic Edition/The Hall"))
+        XCTAssertEqual(layout("Vendor One Pack C", ["Kit C", "Kick"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Vendor One Pack C", packPath: "/x/Vendor One Pack C",
+                             kit: "Kit C", kitPath: "/x/Vendor One Pack C/Kit C"))
         // Generic wrapper folders are skipped.
-        XCTAssertEqual(layout("Bolt Audio Snares V1", ["TCI", "TCI", "01 RAW", "01 SNARE 1", "01 LO"]),
-                       SampleSearchKit.Scanner.Layout(pack: "Bolt Audio Snares V1", packPath: "/x/Bolt Audio Snares V1",
-                             kit: "01 RAW", kitPath: "/x/Bolt Audio Snares V1/TCI/TCI/01 RAW"))
+        XCTAssertEqual(layout("Vendor Two Pack D", ["TCI", "TCI", "01 RAW", "01 SNARE 1", "01 LO"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Vendor Two Pack D", packPath: "/x/Vendor Two Pack D",
+                             kit: "01 RAW", kitPath: "/x/Vendor Two Pack D/TCI/TCI/01 RAW"))
         // Generic root holding several packs: first folder is the pack, next non-category folder the kit.
-        XCTAssertEqual(layout("Samples", ["Acme Drums Vol 1", "Kit A", "Kicks"]),
-                       SampleSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1",
-                             kit: "Kit A", kitPath: "/x/Samples/Acme Drums Vol 1/Kit A"))
-        XCTAssertEqual(layout("Samples", ["Acme Drums Vol 1", "Kicks"]),
-                       SampleSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1"))
-        XCTAssertEqual(layout("Vendor P5", []), SampleSearchKit.Scanner.Layout(pack: "Vendor P5", packPath: "/x/Vendor P5"))
+        XCTAssertEqual(layout("Samples", ["Pack E", "Kit A", "Kicks"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Pack E", packPath: "/x/Samples/Pack E",
+                             kit: "Kit A", kitPath: "/x/Samples/Pack E/Kit A"))
+        XCTAssertEqual(layout("Samples", ["Pack E", "Kicks"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Pack E", packPath: "/x/Samples/Pack E"))
+        XCTAssertEqual(layout("Pack F", []), SampleSearchKit.Scanner.Layout(pack: "Pack F", packPath: "/x/Pack F"))
     }
 }

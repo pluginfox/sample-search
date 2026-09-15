@@ -17,11 +17,11 @@ final class VendorTests: XCTestCase {
 
     func testGuessesFromFolders() {
         // Keywords resolve to their vendor from the root or any folder.
-        XCTAssertEqual(Vendors.guess(root: "/x/Acme Library", folders: ["Trigger Snares", "Snare05"]), "Acme Audio")
-        XCTAssertEqual(Vendors.guess(root: "/x/Some Bolt Pack", folders: ["Snares"]), "Bolt Drums")
-        XCTAssertEqual(Vendors.guess(root: "/x/Samples", folders: ["Cobalt Samples Vol 1"]), "Cobalt")
+        XCTAssertEqual(Vendors.guess(root: "/x/Vendor One Library", folders: ["Snares", "Snare 05"]), "Vendor One")
+        XCTAssertEqual(Vendors.guess(root: "/x/Vendor Two Pack", folders: ["Snares"]), "Vendor Two")
+        XCTAssertEqual(Vendors.guess(root: "/x/Samples", folders: ["Vendor Three Samples"]), "Vendor Three")
         // "Vendor - Product" pack names.
-        XCTAssertEqual(Vendors.guess(root: "/x/Samples", folders: ["Delta Audio - Big Kicks", "Kicks"]), "Delta Audio")
+        XCTAssertEqual(Vendors.guess(root: "/x/Samples", folders: ["Vendor Four - Pack B", "Kicks"]), "Vendor Four")
         XCTAssertNil(Vendors.guess(root: "/x/Samples", folders: ["Random", "Kicks"]))
     }
 
@@ -36,6 +36,6 @@ final class VendorTests: XCTestCase {
 /// Invented vendor list shared by tests, so no real company names appear in fixtures.
 enum TestVendors {
     static let keywords: [(String, String)] = [
-        ("acme", "Acme Audio"), ("bolt", "Bolt Drums"), ("cobalt", "Cobalt"),
+        ("vendor one", "Vendor One"), ("vendor two", "Vendor Two"), ("vendor three", "Vendor Three"),
     ]
 }

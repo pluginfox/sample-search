@@ -5,16 +5,16 @@ final class ClassifierTests: XCTestCase {
     func testVariantSplit() {
         XCTAssertEqual(Classifier.splitVariant("Snare 5 SSDR").variant, "SSDR")
         XCTAssertEqual(Classifier.splitVariant("Snare 5 SSDR").base, "Snare 5")
-        XCTAssertEqual(Classifier.splitVariant("QikTom 2 Z3").variant, "Z3")
+        XCTAssertEqual(Classifier.splitVariant("FastTom 2 Z3").variant, "Z3")
         XCTAssertNil(Classifier.splitVariant("Snare 12").variant)
         XCTAssertNil(Classifier.splitVariant("SSDR").variant)
         XCTAssertNil(Classifier.splitVariant("Big Snare Punchy").variant)
     }
 
     func testCategoryFromName() {
-        XCTAssertEqual(Classifier.category(name: "ChiliSnare Z3", folders: []), .snare)
+        XCTAssertEqual(Classifier.category(name: "RedSnare Z3", folders: []), .snare)
         XCTAssertEqual(Classifier.category(name: "ACKick Z1", folders: []), .kick)
-        XCTAssertEqual(Classifier.category(name: "MapleTom 1 SSDR", folders: []), .tom)
+        XCTAssertEqual(Classifier.category(name: "OakTom 1 SSDR", folders: []), .tom)
         XCTAssertEqual(Classifier.category(name: "Custom Snare", folders: []), .snare)
         XCTAssertEqual(Classifier.category(name: "Kick Room", folders: []), .kick)
         XCTAssertEqual(Classifier.category(name: "Room Mic", folders: []), .other)
@@ -23,8 +23,8 @@ final class ClassifierTests: XCTestCase {
     }
 
     func testSource() {
-        XCTAssertEqual(Classifier.source(name: "DW Kick SB OH", folders: []), .overheads)
-        XCTAssertEqual(Classifier.source(name: "DW Kick SB DIR", folders: []), .direct)
+        XCTAssertEqual(Classifier.source(name: "Kick A OH", folders: []), .overheads)
+        XCTAssertEqual(Classifier.source(name: "Kick A DIR", folders: []), .direct)
         XCTAssertEqual(Classifier.source(name: "Snare 5 SSDR", folders: []), .direct)
         XCTAssertEqual(Classifier.source(name: "Kick Room", folders: []), .rooms)
         XCTAssertEqual(Classifier.source(name: "Close Room", folders: []), .rooms, "direct words never beat a room word")
@@ -39,23 +39,23 @@ final class ClassifierTests: XCTestCase {
     }
 
     func testCategoryFallsBackToFolders() {
-        XCTAssertEqual(Classifier.category(name: "Mixed 01", folders: ["Trigger Snares", "Snare05"]), .snare)
-        XCTAssertEqual(Classifier.category(name: "MIXED", folders: ["The Hall", "Kick"]), .kick)
-        XCTAssertEqual(Classifier.category(name: "Take 3", folders: ["02c Black Brass Snare (14x6.5)", "MIXED"]), .snare)
+        XCTAssertEqual(Classifier.category(name: "Mixed 01", folders: ["Snares", "Snare05"]), .snare)
+        XCTAssertEqual(Classifier.category(name: "MIXED", folders: ["Kit C", "Kick"]), .kick)
+        XCTAssertEqual(Classifier.category(name: "Take 3", folders: ["02c Snare (14x6.5)", "MIXED"]), .snare)
         XCTAssertEqual(Classifier.category(name: "Plain", folders: ["Stuff"]), .other)
     }
 
     func testSuggestRoots() {
         let home = URL(fileURLWithPath: "/Users/me")
         let files = [
-            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/TriggerLibrary/Snares/S1.tci"),
-            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/TriggerLibrary/Kicks/K1.tci"),
-            URL(fileURLWithPath: "/Users/me/Downloads/Acme TCI/Kick/MIXED/a.tci"),
+            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/Pack N/Snares/S1.tci"),
+            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/Pack N/Kicks/K1.tci"),
+            URL(fileURLWithPath: "/Users/me/Downloads/Pack M TCI/Kick/MIXED/a.tci"),
         ]
         let roots = TCIFinder.suggestRoots(for: files, home: home)
         XCTAssertEqual(roots.map(\.root.path), [
-            "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/TriggerLibrary",
-            "/Users/me/Downloads/Acme TCI",
+            "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/Pack N",
+            "/Users/me/Downloads/Pack M TCI",
         ])
         XCTAssertEqual(roots.map(\.count), [2, 1])
     }
