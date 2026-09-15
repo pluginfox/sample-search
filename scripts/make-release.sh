@@ -15,4 +15,4 @@ else
     git tag -a "v$VERSION" -m "Sample Search $VERSION"
     echo "Tagged v$VERSION (push with: git push origin v$VERSION)"
 fi
-echo "Next: https://github.com/pluginfox/trigger-search/releases/new?tag=v$VERSION — attach $ZIP"
+echo "Next: https://github.com/pluginfox/sample-search/releases/new?tag=v$VERSION — attach $ZIP"

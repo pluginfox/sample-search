@@ -176,7 +176,7 @@ struct GitHubTokenField: View {
                 Text("GitHub token").font(.headline)
                 if saved { Text("· saved in Keychain").font(.caption).foregroundStyle(.secondary) }
             }
-            Text("Needed only while the repository is private. Create a fine-grained token at github.com › Settings › Developer settings with read access to Contents on pluginfox/trigger-search, or a classic token with the repo scope.")
+            Text("Needed only while the repository is private. Create a fine-grained token at github.com › Settings › Developer settings with read access to Contents on pluginfox/sample-search, or a classic token with the repo scope.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack {
                 SecureField(saved ? "•••••••••••• (enter a new token to replace)" : "github_pat_…", text: $draft)

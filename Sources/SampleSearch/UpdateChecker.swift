@@ -4,7 +4,7 @@ import Foundation
 /// Compares the running app's version with the latest GitHub release.
 @MainActor
 final class UpdateChecker: ObservableObject {
-    nonisolated static let repo = "pluginfox/trigger-search"
+    nonisolated static let repo = "pluginfox/sample-search"
     nonisolated static let releasesPage = URL(string: "https://github.com/\(repo)/releases/latest")!
     nonisolated static let apiURL = URL(string: "https://api.github.com/repos/\(repo)/releases/latest")!
 
