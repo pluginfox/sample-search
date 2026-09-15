@@ -56,12 +56,16 @@ public enum Classifier {
         return .direct
     }
 
+    /// Direct is the weakest signal: "Close Room" or "Dry Room" is a room mic, so a direct keyword
+    /// only decides when no room / overhead / FX keyword is present in the same text.
     static func source(in text: String) -> SourceType? {
         let lower = text.lowercased().replacingOccurrences(of: "roomy", with: " ")
         var best: (SourceType, Int)?
+        var sawDirect = false
         for (source, keywords) in sourceSubstrings {
             for keyword in keywords {
                 if let range = lower.range(of: keyword) {
+                    if source == .direct { sawDirect = true; continue }
                     let index = lower.distance(from: lower.startIndex, to: range.lowerBound)
                     if best == nil || index < best!.1 { best = (source, index) }
                 }
@@ -74,10 +78,11 @@ public enum Classifier {
                 .map { lower.distance(from: lower.startIndex, to: $0.lowerBound) } ?? offset
             offset = index + t.count
             for (source, set) in sourceTokens where set.contains(t) {
+                if source == .direct { sawDirect = true; continue }
                 if best == nil || index < best!.1 { best = (source, index) }
             }
         }
-        return best?.0
+        return best?.0 ?? (sawDirect ? .direct : nil)
     }
 
     /// Words that contain a keyword by accident and should be ignored.
