@@ -63,7 +63,7 @@ public enum SourceType: String, Codable, CaseIterable, Hashable, Comparable {
     public var symbol: String {
         switch self {
         case .direct: return "mic.fill"
-        case .overheads: return "arrow.up.to.line"
+        case .overheads: return "point.3.filled.connected.trianglepath.dotted"
         case .rooms: return "building.columns"
         case .fx: return "wand.and.stars"
         }
