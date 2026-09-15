@@ -18,7 +18,7 @@ struct ContentView: View {
                 }
         }
         .searchable(text: $model.searchText, placement: .toolbar,
-                    prompt: "Search all \(model.mode == .all ? "files" : model.mode.title.lowercased())…")
+                    prompt: "Search \(model.mode.noun)…")
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("Mode", selection: $model.mode) {
@@ -27,7 +27,7 @@ struct ContentView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .help("Instruments are Trigger .tci files; One-Shots are .wav / .aiff samples; Effects is a separate library (risers, impacts…)")
+                .help("Instruments are Trigger .tci files; One-Shots are .wav / .aiff samples; All Trigger is both; Effects is a separate library (risers, impacts…)")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button { showInspector.toggle() } label: { Label("Inspector", systemImage: "sidebar.trailing") }
@@ -94,7 +94,7 @@ struct ContentView: View {
         switch mode {
         case .instruments: return "Instruments (\(model.instrumentCount))"
         case .oneShots: return "One-Shots (\(model.oneShotCount))"
-        case .all: return "All"
+        case .all: return "All Trigger"
         case .effects: return "Effects (\(model.effectCount))"
         }
     }
@@ -242,6 +242,18 @@ struct FileTableView: View {
                                 : "No \(model.mode == .oneShots ? "one-shots (.wav / .aiff)" : "Trigger instruments (.tci)") in the library folders. Switch mode or add a folder.")
                             : "Nothing matches the current search and filter.")
             } else {
+                if let fallback = model.searchFallback {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.turn.down.right")
+                        Text("Nothing in \(model.mode.noun) matches “\(model.searchText)”. Showing \(rows.count) from \(fallback.noun).")
+                        Spacer()
+                        Button("Switch to \(fallback.title)") { let text = model.searchText; model.mode = fallback; model.searchText = text }
+                            .controlSize(.small)
+                    }
+                    .font(.callout)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color.accentColor.opacity(0.12))
+                }
                 Table(selection: $model.selection, sortOrder: $model.sortOrder, columnCustomization: $columns) {
                     TableColumn("", value: \.favoriteRank) { row in
                         Button { model.toggleFavorite([row.id]) } label: {
@@ -345,7 +357,13 @@ struct FileTableView: View {
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Text("\(rows.count) of \(model.visibleFiles.count) samples")
-                if model.isSearching { Text("· searching all \(model.mode == .all ? "files" : model.mode.title.lowercased())") }
+                if model.isSearching {
+                    if let fallback = model.searchFallback {
+                        Text("· no \(model.mode.noun) matched, showing \(fallback.noun)")
+                    } else {
+                        Text("· searching \(model.mode.noun), then \(model.mode.searchFallbacks.map(\.noun).joined(separator: ", "))")
+                    }
+                }
                 if !model.selection.isEmpty { Text("· \(model.selection.count) selected") }
                 Spacer()
                 if model.isExporting {

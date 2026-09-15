@@ -23,8 +23,27 @@ enum LibraryMode: String, CaseIterable, Identifiable {
         switch self {
         case .instruments: return "Instruments"
         case .oneShots: return "One-Shots"
-        case .all: return "All"
+        case .all: return "All Trigger"
         case .effects: return "Effects"
+        }
+    }
+    /// Lower-case noun for prompts and footers.
+    var noun: String {
+        switch self {
+        case .instruments: return "instruments"
+        case .oneShots: return "one-shots"
+        case .all: return "the Trigger library"
+        case .effects: return "effects"
+        }
+    }
+    /// Where a search looks when this mode has no matches: the rest of the Trigger library, then Effects
+    /// (or the Trigger library when starting from Effects).
+    var searchFallbacks: [LibraryMode] {
+        switch self {
+        case .instruments: return [.oneShots, .effects]
+        case .oneShots: return [.instruments, .effects]
+        case .all: return [.effects]
+        case .effects: return [.all]
         }
     }
     /// Effects are a separate library; "All" means the whole Trigger library.
@@ -195,10 +214,10 @@ final class LibraryModel: ObservableObject {
     /// selected, everything the sidebar filter or search currently shows (except plain "All Samples").
     var topLevelRows: [Row] {
         guard mirrorSelection, !mode.isEffects else { return [] }
-        if !selection.isEmpty { return selectedRows }
+        if !selection.isEmpty { return selectedRows.filter(\.file.kind.isTriggerLibrary) }
         let showingGroup = isSearching || (filter != nil && filter != .all)
         guard showingGroup else { return [] }
-        return Array(filteredRows.prefix(Self.topLevelLimit))
+        return Array(filteredRows.filter(\.file.kind.isTriggerLibrary).prefix(Self.topLevelLimit))
     }
 
     /// Mirrors `topLevelRows` as links at the top level of the browser folder, debounced.
@@ -234,16 +253,46 @@ final class LibraryModel: ObservableObject {
     /// True while a search is active: the sidebar filter is ignored and only the mode narrows results.
     var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
 
-    var filteredRows: [Row] {
-        let terms = searchText.lowercased().split(separator: " ").map(String.init)
-        return allRows.filter { row in
-            guard !terms.isEmpty else { return matches(filter, row: row) }
+    /// Rows of every file the given mode includes.
+    private func rows(in mode: LibraryMode) -> [Row] {
+        files.filter { mode.includes($0.kind) }.map { Row(file: $0, meta: data.items[$0.path] ?? ItemMeta(),
+                                                          vendor: data.vendors[$0.packKey] ?? $0.vendor ?? "",
+                                                          pack: data.packNames[$0.packKey] ?? $0.pack,
+                                                          kit: (data.items[$0.path]?.kit) ?? $0.kitPath.flatMap { data.kitNames[$0] } ?? $0.kit ?? "") }
+    }
+
+    private func search(_ rows: [Row], terms: [String]) -> [Row] {
+        rows.filter { row in
             let haystack = [row.name, row.folder, row.pack, row.kit, row.categoryName, row.sourceName, row.tagsJoined, row.variant, row.vendor, row.notes]
                 .joined(separator: " ").lowercased()
             return terms.allSatisfy { haystack.contains($0) }
         }
-        .sorted(using: sortOrder)
     }
+
+    /// Search result plus the library it came from when the current mode had no matches.
+    struct SearchOutcome {
+        var rows: [Row]
+        var fallback: LibraryMode?
+    }
+
+    var searchOutcome: SearchOutcome {
+        let terms = searchText.lowercased().split(separator: " ").map(String.init)
+        guard !terms.isEmpty else {
+            return SearchOutcome(rows: allRows.filter { matches(filter, row: $0) }.sorted(using: sortOrder), fallback: nil)
+        }
+        let own = search(allRows, terms: terms)
+        if !own.isEmpty { return SearchOutcome(rows: own.sorted(using: sortOrder), fallback: nil) }
+        for stage in mode.searchFallbacks {
+            let hits = search(rows(in: stage), terms: terms)
+            if !hits.isEmpty { return SearchOutcome(rows: hits.sorted(using: sortOrder), fallback: stage) }
+        }
+        return SearchOutcome(rows: [], fallback: nil)
+    }
+
+    var filteredRows: [Row] { searchOutcome.rows }
+
+    /// Set while a search is showing results from another library than the current mode.
+    var searchFallback: LibraryMode? { searchOutcome.fallback }
 
     private func matches(_ filter: SidebarFilter?, row: Row) -> Bool {
         switch filter {

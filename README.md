@@ -9,8 +9,8 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 
 ## Features
 
-- **Modes** in the toolbar: *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`), *All*
-  (the whole Trigger library) and *Effects*, a completely separate library of `.wav` / `.aiff`
+- **Modes** in the toolbar: *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`), *All Trigger*
+  (both) and *Effects*, a completely separate library of `.wav` / `.aiff`
   sound effects (risers, downlifters, impacts, hits, cymbals, whooshes, drones, reverses) scanned from its
   own folders, classified by type from names, and never written to the Trigger browser folder.
   Effects share tags, favourites, notes, packs, kits, vendors, preview and search with the rest.
@@ -35,9 +35,12 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 - **Vendor column**: guessed from folder names (Steven Slate Drums, MixWave, Vendor One, Vendor Two,
   GetGood Drums, Toontrack, XLN, and "Vendor - Product" style pack names). Type a vendor in the
   inspector to set it for the whole pack. The sidebar has a Vendors section.
-- **Search** across name, folder, pack, kit, vendor, category, source, variant and tags. Every word
-  must match. A search covers everything in the current mode (Instruments / One-Shots / All) and
-  ignores the sidebar selection. Clicking a sidebar item clears the search.
+- **Search** across name, folder, pack, kit, vendor, category, source, variant, tags and notes. Every
+  word must match. A search covers everything in the current mode and ignores the sidebar selection.
+  If the current library has no matches it falls through in order: Instruments → One-Shots → Effects
+  (One-Shots → Instruments → Effects; All Trigger → Effects; Effects → All Trigger), with a banner
+  saying where the results came from and a button to switch there. Clicking a sidebar item clears
+  the search.
 - **Tags** with quick-add suggestions from tags you already use. Select several rows to tag them at once.
   Rename or delete a tag from its sidebar context menu.
 - **Notes**: free text per sample in the inspector, saved as you type, shown in a Notes column and
