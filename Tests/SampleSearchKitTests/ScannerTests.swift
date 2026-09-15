@@ -1,5 +1,5 @@
 import XCTest
-@testable import TriggerSearchKit
+@testable import SampleSearchKit
 
 final class ScannerTests: XCTestCase {
     func testScanPicksUpInstrumentsAndOneShots() throws {
@@ -29,7 +29,7 @@ final class ScannerTests: XCTestCase {
             try Data("x".utf8).write(to: dir.appendingPathComponent(name))
         }
         defer { try? FileManager.default.removeItem(at: root) }
-        let files = TriggerSearchKit.Scanner.scan(roots: [], effectRoots: [root]).sorted { $0.name < $1.name }
+        let files = SampleSearchKit.Scanner.scan(roots: [], effectRoots: [root]).sorted { $0.name < $1.name }
         XCTAssertEqual(files.map(\.name), ["Big Riser 01", "Impact Boom", "Reverse Cymbal", "Snare Hit"], ".tci ignored in effects roots")
         XCTAssertTrue(files.allSatisfy { $0.kind == .effect })
         XCTAssertEqual(files.map(\.effectCategory), [.riser, .impact, .reverse, .hit])
@@ -37,28 +37,28 @@ final class ScannerTests: XCTestCase {
     }
 
     func testPackAndKitInference() {
-        func layout(_ root: String, _ folders: [String]) -> TriggerSearchKit.Scanner.Layout {
-            TriggerSearchKit.Scanner.inferLayout(rootPath: "/x/" + root, rootName: root, folders: folders)
+        func layout(_ root: String, _ folders: [String]) -> SampleSearchKit.Scanner.Layout {
+            SampleSearchKit.Scanner.inferLayout(rootPath: "/x/" + root, rootName: root, folders: folders)
         }
         // Category folders directly under the root: root is the pack, no kit.
         XCTAssertEqual(layout("Trigger2Library", ["Trigger2 Snares", "Snare05"]),
-                       TriggerSearchKit.Scanner.Layout(pack: "Trigger2Library", packPath: "/x/Trigger2Library"))
+                       SampleSearchKit.Scanner.Layout(pack: "Trigger2Library", packPath: "/x/Trigger2Library"))
         XCTAssertEqual(layout("Pack A TCI", ["01a Kick (Gretsch)", "MIXED"]),
-                       TriggerSearchKit.Scanner.Layout(pack: "Pack A TCI", packPath: "/x/Pack A TCI"))
+                       SampleSearchKit.Scanner.Layout(pack: "Pack A TCI", packPath: "/x/Pack A TCI"))
         // Vendor-named root with kit folders inside.
         XCTAssertEqual(layout("Vendor One Pack C", ["Kit C", "Kick"]),
-                       TriggerSearchKit.Scanner.Layout(pack: "Vendor One Pack C", packPath: "/x/Vendor One Pack C",
+                       SampleSearchKit.Scanner.Layout(pack: "Vendor One Pack C", packPath: "/x/Vendor One Pack C",
                              kit: "Kit C", kitPath: "/x/Vendor One Pack C/Kit C"))
         // Generic wrapper folders are skipped.
         XCTAssertEqual(layout("Vendor Two Pack D", ["TCI", "TCI", "01 RAW", "01 SNARE 1", "01 LO"]),
-                       TriggerSearchKit.Scanner.Layout(pack: "Vendor Two Pack D", packPath: "/x/Vendor Two Pack D",
+                       SampleSearchKit.Scanner.Layout(pack: "Vendor Two Pack D", packPath: "/x/Vendor Two Pack D",
                              kit: "01 RAW", kitPath: "/x/Vendor Two Pack D/TCI/TCI/01 RAW"))
         // Generic root holding several packs: first folder is the pack, next non-category folder the kit.
         XCTAssertEqual(layout("Samples", ["Acme Drums Vol 1", "Kit A", "Kicks"]),
-                       TriggerSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1",
+                       SampleSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1",
                              kit: "Kit A", kitPath: "/x/Samples/Acme Drums Vol 1/Kit A"))
         XCTAssertEqual(layout("Samples", ["Acme Drums Vol 1", "Kicks"]),
-                       TriggerSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1"))
-        XCTAssertEqual(layout("Pack F", []), TriggerSearchKit.Scanner.Layout(pack: "Pack F", packPath: "/x/Pack F"))
+                       SampleSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1"))
+        XCTAssertEqual(layout("Pack F", []), SampleSearchKit.Scanner.Layout(pack: "Pack F", packPath: "/x/Pack F"))
     }
 }

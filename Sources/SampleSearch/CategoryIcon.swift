@@ -1,6 +1,6 @@
 import DrumIcons
 import SwiftUI
-import TriggerSearchKit
+import SampleSearchKit
 
 /// Category glyph: the hand-drawn kick and tom, SF Symbols for the rest.
 struct CategoryIcon: View {

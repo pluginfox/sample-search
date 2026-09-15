@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-import TriggerSearchKit
+import SampleSearchKit
 
 enum SidebarFilter: Hashable {
     case all
@@ -139,6 +139,7 @@ final class LibraryModel: ObservableObject {
     private let store = LibraryStore()
 
     init() {
+        Migration.runIfNeeded()
         data = store.load()
         mode = LibraryMode(rawValue: UserDefaults.standard.string(forKey: "libraryMode") ?? "") ?? .instruments
         autoPlay = UserDefaults.standard.bool(forKey: "autoPlay")
@@ -593,7 +594,7 @@ final class LibraryModel: ObservableObject {
     }
 
     private func persist(triggersExport: Bool = true) {
-        do { try store.save(data) } catch { NSLog("Trigger Search: failed to save library: \(error)") }
+        do { try store.save(data) } catch { NSLog("Sample Search: failed to save library: \(error)") }
         if triggersExport { scheduleAutoExport() }
     }
 }

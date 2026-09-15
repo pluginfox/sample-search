@@ -1,5 +1,5 @@
 import SwiftUI
-import TriggerSearchKit
+import SampleSearchKit
 
 struct FoldersSheet: View {
     @EnvironmentObject var model: LibraryModel
@@ -113,7 +113,7 @@ struct FoldersSheet: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.message = "Choose an empty folder for Trigger Search to fill with links"
+        panel.message = "Choose an empty folder for Sample Search to fill with links"
         panel.prompt = "Use Folder"
         if panel.runModal() == .OK, let url = panel.url {
             BrowserFolder.url = url

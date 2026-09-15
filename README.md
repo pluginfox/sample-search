@@ -1,4 +1,7 @@
-# Trigger Search
+# Sample Search
+
+(Formerly *Trigger Search*. Existing metadata, settings and the Trigger browser folder location are
+carried over automatically on first launch.)
 
 A small native macOS app for browsing a library of Slate **Trigger 2** `.tci` instrument files and
 plain `.wav` / `.aiff` one-shots. It replaces Trigger's folder-only browser with search, tags and
@@ -44,7 +47,7 @@ favourites, and lets you drag a sample straight onto a Trigger 2 slot in your DA
   track, sampler or Finder window. Nothing is ever moved or renamed. (`.tci` files have no drag tile:
   Logic never delivers file drops to the Trigger 2 window, so use the browser folder below instead.)
 - **Trigger browser folder** (File › Update Trigger Browser Folder, ⌘E): writes a folder of symlinks
-  (default `~/Music/Trigger Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
+  (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
   `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
   The files currently selected in the app are also linked directly at the top level of that folder,
   updated a moment after the selection changes. With nothing selected, the whole group the sidebar
@@ -58,14 +61,14 @@ favourites, and lets you drag a sample straight onto a Trigger 2 slot in your DA
   as its name and size still match.
 
 Tags, favourites and the folder list are stored in
-`~/Library/Application Support/Trigger Search/library.json`.
+`~/Library/Application Support/Sample Search/library.json`.
 
 ## Build
 
 Requires Xcode 15+ / Swift 5.9+ and macOS 14+.
 
 ```sh
-./scripts/make-app.sh            # builds build/Trigger Search.app
+./scripts/make-app.sh            # builds build/Sample Search.app
 ./scripts/make-app.sh --install  # …and copies it to /Applications (quits the running copy first)
 swift test                       # classifier, scanner, exporter and metadata-migration tests
 swift scripts/make-icon.swift Resources && iconutil -c icns Resources/AppIcon.iconset -o Resources/AppIcon.icns  # regenerate the icon
@@ -73,13 +76,13 @@ swift scripts/make-icon.swift Resources && iconutil -c icns Resources/AppIcon.ic
 
 ## Updates and releases
 
-Trigger Search › Check for Updates… compares the app's version with the latest release on
+Sample Search › Check for Updates… compares the app's version with the latest release on
 GitHub and offers the download. It also checks quietly once a day at launch (toggle in the Folders
 sheet). To publish a release:
 
 ```sh
 echo 0.3.0 > VERSION            # bump
-./scripts/make-release.sh       # builds, zips build/Trigger-Search-0.3.0.zip, tags v0.3.0
+./scripts/make-release.sh       # builds, zips build/Sample-Search-0.3.0.zip, tags v0.3.0
 git push origin main v0.3.0
 ```
 
@@ -98,9 +101,9 @@ sidebar and the inspector button (⌥⌘I) hides the inspector; both states are 
 
 ## Layout
 
-- `Sources/TriggerSearchKit` – models, filename classifier, scanner, JSON store, Spotlight discovery.
-- `Sources/TriggerSearch` – SwiftUI app: sidebar, sortable table, inspector, tag editor, AppKit drag source.
-- `Tests/TriggerSearchKitTests` – unit tests (one test scans your real library when present).
+- `Sources/SampleSearchKit` – models, filename classifier, scanner, JSON store, Spotlight discovery.
+- `Sources/SampleSearch` – SwiftUI app: sidebar, sortable table, inspector, tag editor, AppKit drag source.
+- `Tests/SampleSearchKitTests` – unit tests (one test scans your real library when present).
 
 ## Notes
 

@@ -25,7 +25,7 @@ public enum BrowserFolderExporter {
     public struct NotOursError: LocalizedError {
         public let path: String
         public var errorDescription: String? {
-            "“\(path)” already exists and was not created by Trigger Search. Choose an empty or new folder."
+            "“\(path)” already exists and was not created by Sample Search. Choose an empty or new folder."
         }
     }
 

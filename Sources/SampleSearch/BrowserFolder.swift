@@ -1,5 +1,5 @@
 import Foundation
-import TriggerSearchKit
+import SampleSearchKit
 
 /// Where the Trigger-browsable link folder lives, and how rows map onto exporter entries.
 enum BrowserFolder {
@@ -8,7 +8,7 @@ enum BrowserFolder {
     static var url: URL {
         get {
             if let path = UserDefaults.standard.string(forKey: defaultsKey) { return URL(fileURLWithPath: path) }
-            return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Music/Trigger Search")
+            return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Music/Sample Search")
         }
         set { UserDefaults.standard.set(newValue.path, forKey: defaultsKey) }
     }

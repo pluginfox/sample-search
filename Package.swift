@@ -2,16 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "TriggerSearch",
+    name: "SampleSearch",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "TriggerSearch", targets: ["TriggerSearch"]),
+        .executable(name: "SampleSearch", targets: ["SampleSearch"]),
     ],
     targets: [
-        .target(name: "TriggerSearchKit"),
+        .target(name: "SampleSearchKit"),
         .target(name: "DrumIcons"),
         .executableTarget(name: "icon-preview", dependencies: ["DrumIcons"]),
-        .executableTarget(name: "TriggerSearch", dependencies: ["TriggerSearchKit", "DrumIcons"]),
-        .testTarget(name: "TriggerSearchKitTests", dependencies: ["TriggerSearchKit"]),
+        .executableTarget(name: "SampleSearch", dependencies: ["SampleSearchKit", "DrumIcons"]),
+        .testTarget(name: "SampleSearchKitTests", dependencies: ["SampleSearchKit"]),
     ]
 )

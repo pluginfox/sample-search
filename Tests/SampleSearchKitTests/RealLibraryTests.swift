@@ -1,5 +1,5 @@
 import XCTest
-@testable import TriggerSearchKit
+@testable import SampleSearchKit
 
 /// Only runs when the user's real library exists; prints a category breakdown for eyeballing.
 final class RealLibraryTests: XCTestCase {

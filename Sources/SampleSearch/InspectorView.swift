@@ -1,5 +1,5 @@
 import SwiftUI
-import TriggerSearchKit
+import SampleSearchKit
 
 struct InspectorView: View {
     @EnvironmentObject var model: LibraryModel

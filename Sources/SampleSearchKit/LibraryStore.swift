@@ -9,7 +9,7 @@ public struct LibraryStore {
             self.fileURL = fileURL
         } else {
             let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            self.fileURL = base.appendingPathComponent("Trigger Search", isDirectory: true)
+            self.fileURL = base.appendingPathComponent("Sample Search", isDirectory: true)
                 .appendingPathComponent("library.json")
         }
     }

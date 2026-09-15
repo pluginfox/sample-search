@@ -1,12 +1,12 @@
 import SwiftUI
 
 @main
-struct TriggerSearchApp: App {
+struct SampleSearchApp: App {
     @StateObject private var model = LibraryModel.shared
     @StateObject private var updates = UpdateChecker()
 
     var body: some Scene {
-        WindowGroup("Trigger Search") {
+        WindowGroup("Sample Search") {
             ContentView()
                 .environmentObject(model)
                 .environmentObject(updates)

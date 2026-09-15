@@ -1,5 +1,5 @@
 import SwiftUI
-import TriggerSearchKit
+import SampleSearchKit
 
 struct ContentView: View {
     @EnvironmentObject var model: LibraryModel
@@ -83,8 +83,8 @@ struct ContentView: View {
         case .available(let release, let current):
             let notes = (release.body ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let summary = notes.isEmpty ? "" : "\n\n" + String(notes.prefix(400))
-            return "Trigger Search \(release.tag_name) is available; you have \(current).\(summary)"
-        case .upToDate(let current): return "Trigger Search \(current) is the latest version."
+            return "Sample Search \(release.tag_name) is available; you have \(current).\(summary)"
+        case .upToDate(let current): return "Sample Search \(current) is the latest version."
         case .failed(let reason): return reason
         case .none: return ""
         }
@@ -405,7 +405,7 @@ struct EmptyLibraryView: View {
         VStack(spacing: 14) {
             Image(systemName: "folder.badge.plus").font(.system(size: 44)).foregroundStyle(.tertiary)
             Text("No Library Folders").font(.title2).bold()
-            Text("Add the folders that hold your Trigger 2 .tci files, and optionally a separate Effects library.\nTrigger Search never moves or changes them.")
+            Text("Add the folders that hold your Trigger 2 .tci files, and optionally a separate Effects library.\nSample Search never moves or changes them.")
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button("Choose Folders…") { model.showFolders = true }.buttonStyle(.borderedProminent)
         }

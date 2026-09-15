@@ -1,5 +1,5 @@
 import XCTest
-@testable import TriggerSearchKit
+@testable import SampleSearchKit
 
 final class BrowserFolderExporterTests: XCTestCase {
     var tmp: URL!
