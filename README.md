@@ -1,6 +1,6 @@
 # Sample Search
 
-A small native macOS app for browsing a library of Slate **Trigger 2** `.tci` instrument files and
+A small native macOS app for browsing a library of **Trigger 2** `.tci` instrument files and
 plain `.wav` / `.aiff` one-shots and effects. It replaces Trigger's folder-only browser with search,
 tags and favourites, and feeds them back to Trigger 2 through a folder its own browser can navigate.
 
@@ -23,16 +23,16 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
   source (Direct / Overheads / Rooms / FX, from tokens such as `OH`, `RM`, `Room`, `Amb`, `FX`;
   Direct by default), pack, sub-folder, and variant suffix such as `SSDR`, `NRG`, `Z1`, `Z3`.
   Category and source can be overridden per file. The pack is the first folder under a library root, unless
-  that folder is really a category ("Trigger2 Snares", "01a Kick"), in which case the root is the pack.
-  Inside a pack, the next folder is a **kit** unless it is a category folder, so Vendor One's
-  "Kit C" / "Kit D" show as kits nested under the pack in the sidebar. Wrapper folders such
+  that folder is really a category ("Snares", "01a Kick"), in which case the root is the pack.
+  Inside a pack, the next folder is a **kit** unless it is a category folder, so a pack laid out as
+  "Pack/Kit A/Kick" shows its kits nested under the pack in the sidebar. Wrapper folders such
   as "TCI" or "Samples" are ignored. Pack names can be renamed in the inspector or by
   right-clicking them in the sidebar; the name applies to every file in that folder.
 - **Kits are also assignable by hand**: select any files (across folders), type a kit name in the
   inspector or click an existing kit chip, and they group under that kit in the sidebar. Useful for
   libraries like the stock Trigger 2 one where every kit lives in one folder.
-- **Vendor column**: guessed from folder names (Steven Slate Drums, MixWave, Vendor One, Vendor Two,
-  GetGood Drums, Toontrack, XLN, and "Vendor - Product" style pack names). Type a vendor in the
+- **Vendor column**: guessed from folder names using a built-in list of common sample vendors and
+  "Vendor - Product" style pack names. Type a vendor in the
   inspector to set it for the whole pack. The sidebar has a Vendors section.
 - **Search** across name, folder, pack, kit, vendor, category, source, variant, tags and notes. Every
   word must match. A search covers everything in the current mode and ignores the sidebar selection.
