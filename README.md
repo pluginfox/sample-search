@@ -80,17 +80,12 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 Tags, favourites and the folder list are stored in
 `~/Library/Application Support/Sample Search/library.json`.
 
-## Build
+## Install
 
-Requires macOS 14+ and the Swift toolchain from the Command Line Tools (`xcode-select --install`);
-full Xcode is not needed.
-
-```sh
-./scripts/make-app.sh            # builds build/Sample Search.app
-./scripts/make-app.sh --install  # …and copies it to /Applications (quits the running copy first)
-swift test                       # classifier, scanner, exporter and metadata-migration tests
-swift scripts/make-icon.swift Resources && iconutil -c icns Resources/AppIcon.iconset -o Resources/AppIcon.icns  # regenerate the icon
-```
+Download `Sample-Search-<version>.zip` from the latest
+[GitHub release](https://github.com/pluginfox/sample-search/releases/latest), unzip it and drag
+**Sample Search.app** to Applications. Requires macOS 14 or later. The app is not notarised, so on
+first launch right-click it and choose Open.
 
 ## First run and resetting
 
@@ -101,21 +96,10 @@ toolbar, mode, toggles, browser-folder location) and re-shows Welcome; library f
 favourites, notes, kits and vendors live in `~/Library/Application Support/Sample Search/library.json`
 and are never touched by a reset. To start completely fresh, quit the app and delete that file.
 
-## Updates and releases
+## Updates
 
-Sample Search › Check for Updates… compares the app's version with the latest release on
-GitHub and offers the download. It also checks quietly once a day at launch (toggle in the Folders
-sheet). To publish a release:
-
-```sh
-echo 0.3.0 > VERSION            # bump
-./scripts/make-release.sh       # builds, zips build/Sample-Search-0.3.0.zip, tags v0.3.0
-git push origin main v0.3.0
-```
-
-Then create the GitHub release for that tag and attach the zip. The update check reads the public
-releases API, so the repository must be public for it to work. The app is ad-hoc signed, so on
-first launch of a downloaded copy right-click › Open (or `xattr -dr com.apple.quarantine`).
+Sample Search › Check for Updates… compares the app's version with the latest GitHub release and
+offers the download. It also checks quietly once a day at launch (toggle in the Folders sheet).
 
 ## Window
 
