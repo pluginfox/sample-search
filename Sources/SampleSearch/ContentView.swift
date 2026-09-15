@@ -45,8 +45,6 @@ struct ContentView: View {
                     .disabled(model.isScanning)
                 Button { model.showFolders = true } label: { Label("Folders", systemImage: "folder.badge.gearshape") }
                     .help("Choose library folders")
-                Button { model.updateBrowserFolder() } label: { Label("Update Browser Folder", systemImage: "square.and.arrow.up.on.square") }
-                    .help("Rebuild the folder of links Trigger 2's own browser can navigate (⌘E)")
             }
         }
         .sheet(isPresented: $model.showFolders) { FoldersSheet() }
