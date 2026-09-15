@@ -46,9 +46,8 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
   included in search. Notes are not exported to the browser folder.
 - **Favourites** (star column, ⌘D, or the inspector button).
 - **Drag and drop for one-shots and effects**: drag WAV/AIFF rows, or the drag tile in the inspector,
-  onto a DAW track or sampler. Nothing is ever moved or renamed. Trigger 2 does not accept file drops
-  at all (Logic never delivers them to the plugin window), so `.tci` files have no drag tile; use the
-  browser folder below instead.
+  onto a DAW track or sampler. Nothing is ever moved or renamed. Trigger 2 does not accept file drops,
+  so `.tci` files have no drag tile; use the browser folder below instead.
 - **Trigger browser folder** (File › Update Trigger Browser Folder, ⌘E): writes a folder of symlinks
   (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
   `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
