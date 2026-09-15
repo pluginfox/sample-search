@@ -21,8 +21,15 @@ struct WelcomeSheet: View {
                  "Point the app at the folders holding your .wav / .aiff one-shots and, if you use Slate Trigger 2, its .tci instruments. “Find TCI Files Automatically” uses Spotlight to suggest Trigger folders. Nothing is moved or renamed.")
             step(2, "Optionally add an Effects library",
                  "Risers, impacts, whooshes and the like live in their own folders and their own Effects mode, so they never mix with the Trigger library.")
-            step(3, "Trigger 2 users: point its browser at the Sample Search folder",
-                 "The app keeps a folder of links at \(abbreviated(BrowserFolder.url.path)), grouped by favourites, tags, kits, categories, sources and vendors, with your current selection at the top level. Add that folder in Trigger 2's browser once. The folder updates itself as you tag and select, but Trigger 2 caches its listing, so click its refresh button after each selection change to see the latest files. One-shots and effects can simply be dragged onto a DAW track or sampler.")
+            step(3, "Trigger 2 users: point its browser at the Sample Search folder") {
+                VStack(alignment: .leading, spacing: 6) {
+                    (Text("The app keeps a folder of links at ")
+                        + Text(abbreviated(BrowserFolder.url.path)).bold().foregroundColor(.primary)
+                        + Text(", grouped by favourites, tags, kits, categories, sources and vendors, with your current selection at the top level."))
+                    Text("Add that folder in Trigger 2's browser once. It updates itself as you tag and select, but Trigger 2 caches its listing, so click its refresh button after each selection change to see the latest files.")
+                    Text("One-shots and effects can simply be dragged onto a DAW track or sampler.")
+                }
+            }
 
             Text("Tags, favourites, notes, kits and vendors are stored in the app's own library file, not in your sample folders. Settings can be reset at any time from the Sample Search menu without losing them.")
                 .font(.callout).foregroundStyle(.secondary)
@@ -42,12 +49,16 @@ struct WelcomeSheet: View {
     }
 
     private func step(_ n: Int, _ title: String, _ detail: String) -> some View {
+        step(n, title) { Text(detail) }
+    }
+
+    private func step<Detail: View>(_ n: Int, _ title: String, @ViewBuilder detail: () -> Detail) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text("\(n)").font(.headline).frame(width: 26, height: 26)
                 .background(Color.accentColor.opacity(0.18), in: Circle())
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)
-                Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                detail().font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
