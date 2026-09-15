@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// An AppKit drag source that puts real file URLs on the pasteboard, exactly like dragging from
-/// Finder, so plug-in windows (Trigger 2, other JUCE hosts) accept the drop.
+/// Finder, so DAW tracks and samplers accept the drop.
 struct FileDragSource: NSViewRepresentable {
     var urls: [URL]
 

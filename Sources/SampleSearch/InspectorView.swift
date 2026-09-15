@@ -345,7 +345,7 @@ struct AudioInfoText: View {
     }
 }
 
-/// Drag handle for one-shots: drop them on a DAW track, a sampler or a Finder window.
+/// Drag handle for one-shots and effects: drop them on a DAW track or sampler.
 /// Hidden for `.tci` files, which Trigger 2 loads through its own browser instead.
 struct DragTile: View {
     var urls: [URL]
@@ -355,7 +355,7 @@ struct DragTile: View {
             FileDragSource(urls: urls)
             VStack(spacing: 6) {
                 Image(systemName: "hand.draw").font(.system(size: 26))
-                Text(urls.count == 1 ? "Drag to DAW or Finder" : "Drag \(urls.count) files to DAW or Finder")
+                Text(urls.count == 1 ? "Drag to DAW" : "Drag \(urls.count) files to DAW")
                     .font(.callout).bold()
                 Text("Grab here or drag the row itself").font(.caption).foregroundStyle(.secondary)
             }

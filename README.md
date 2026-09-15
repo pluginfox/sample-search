@@ -4,8 +4,8 @@
 carried over automatically on first launch.)
 
 A small native macOS app for browsing a library of Slate **Trigger 2** `.tci` instrument files and
-plain `.wav` / `.aiff` one-shots. It replaces Trigger's folder-only browser with search, tags and
-favourites, and lets you drag a sample straight onto a Trigger 2 slot in your DAW.
+plain `.wav` / `.aiff` one-shots and effects. It replaces Trigger's folder-only browser with search,
+tags and favourites, and feeds them back to Trigger 2 through a folder its own browser can navigate.
 
 ## Features
 
@@ -43,9 +43,10 @@ favourites, and lets you drag a sample straight onto a Trigger 2 slot in your DA
 - **Notes**: free text per sample in the inspector, saved as you type, shown in a Notes column and
   included in search. Notes are not exported to the browser folder.
 - **Favourites** (star column, ⌘D, or the inspector button).
-- **Drag and drop for one-shots**: drag WAV/AIFF rows, or the drag tile in the inspector, onto a DAW
-  track, sampler or Finder window. Nothing is ever moved or renamed. (`.tci` files have no drag tile:
-  Logic never delivers file drops to the Trigger 2 window, so use the browser folder below instead.)
+- **Drag and drop for one-shots and effects**: drag WAV/AIFF rows, or the drag tile in the inspector,
+  onto a DAW track or sampler. Nothing is ever moved or renamed. Trigger 2 does not accept file drops
+  at all (Logic never delivers them to the plugin window), so `.tci` files have no drag tile; use the
+  browser folder below instead.
 - **Trigger browser folder** (File › Update Trigger Browser Folder, ⌘E): writes a folder of symlinks
   (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
   `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
