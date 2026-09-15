@@ -82,7 +82,8 @@ Tags, favourites and the folder list are stored in
 
 ## Build
 
-Requires Xcode 15+ / Swift 5.9+ and macOS 14+.
+Requires macOS 14+ and the Swift toolchain from the Command Line Tools (`xcode-select --install`);
+full Xcode is not needed.
 
 ```sh
 ./scripts/make-app.sh            # builds build/Sample Search.app
