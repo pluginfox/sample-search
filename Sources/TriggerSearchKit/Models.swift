@@ -65,7 +65,7 @@ public enum SourceType: String, Codable, CaseIterable, Hashable, Comparable {
         case .direct: return "mic.fill"
         case .overheads: return "point.3.filled.connected.trianglepath.dotted"
         case .rooms: return "building.columns"
-        case .fx: return "wand.and.stars"
+        case .fx: return "sparkles.2"
         }
     }
 
