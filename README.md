@@ -53,16 +53,19 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 - **Trigger browser folder** (File › Update Trigger Browser Folder, ⌘E): writes a folder of symlinks
   (default `~/Music/Sample Search`) organised as `Favourites/`, `Tags/<tag>/`, `Kits/<pack>/<kit>/`,
   `Categories/<category>/<source>/`, `Sources/<source>/` and `Vendors/<vendor>/<pack>/<kit>/`.
+  Point Trigger 2's built-in browser at it and your tags and kits are navigable inside the plugin,
+  which matters in hosts such as Logic (AU) where file drops never reach the plugin window.
   The files currently selected in the app are also linked directly at the top level of that folder,
   updated a moment after the selection changes. With nothing selected, the whole group the sidebar
   or search is showing (a pack, kit, tag, category, search hits… but not "All Samples") is mirrored
-  instead, capped at 2000 links. Switch off in the Folders sheet. Point Trigger 2's built-in browser at it and your tags and kits are
-  navigable inside the plugin. Useful in hosts such as Logic (AU), where file drops never reach the
-  plugin window. The folder is rebuilt automatically a couple of seconds after any tag, favourite,
-  kit, pack or vendor change and after each rescan (switch this off in the Folders sheet). It is
+  instead, capped at 2000 links. Trigger 2 caches its directory listing, so click its refresh button
+  after changing the selection to see the new links. The folder is rebuilt automatically a couple of
+  seconds after any tag, favourite, kit, pack or vendor change and after each rescan; both the
+  automatic rebuild and the selection mirroring can be switched off in the Folders sheet. It is
   rebuilt from scratch each time and is only ever cleared if it contains the marker file the app wrote.
-- **Copy Path** (⌘C) for pasting into Trigger's open dialog with ⇧⌘G, and **Reveal in Finder** (⇧⌘R). Metadata follows a file that you move to a different folder, as long
-  as its name and size still match.
+  Effects are never written to it.
+- **Copy Path** (⌘C) for pasting into Trigger's open dialog with ⇧⌘G, and **Reveal in Finder** (⇧⌘R).
+  Metadata follows a file that you move to a different folder, as long as its name and size still match.
 
 Tags, favourites and the folder list are stored in
 `~/Library/Application Support/Sample Search/library.json`.
