@@ -78,6 +78,15 @@ swift test                       # classifier, scanner, exporter and metadata-mi
 swift scripts/make-icon.swift Resources && iconutil -c icns Resources/AppIcon.iconset -o Resources/AppIcon.icns  # regenerate the icon
 ```
 
+## First run and resetting
+
+On first launch (no folders configured) a Welcome sheet walks through the three steps: add Trigger
+folders, optionally add Effects folders, and point Trigger 2's browser at the link folder. Help ›
+Welcome shows it again. Sample Search › Reset Settings… clears preferences only (window, columns,
+toolbar, mode, toggles, browser-folder location) and re-shows Welcome; library folders, tags,
+favourites, notes, kits and vendors live in `~/Library/Application Support/Sample Search/library.json`
+and are never touched by a reset. To start completely fresh, quit the app and delete that file.
+
 ## Updates and releases
 
 Sample Search › Check for Updates… compares the app's version with the latest release on

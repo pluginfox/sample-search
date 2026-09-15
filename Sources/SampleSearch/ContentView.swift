@@ -56,6 +56,13 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $model.showFolders) { FoldersSheet() }
+        .sheet(isPresented: $model.showWelcome) { WelcomeSheet() }
+        .alert("Reset Settings?", isPresented: $model.confirmReset) {
+            Button("Reset", role: .destructive) { model.resetSettings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Window layout, columns, toolbar, mode and toggles go back to defaults and the welcome screen shows again. Your library folders, tags, favourites, notes, kits and vendors are kept.")
+        }
         .alert(updateTitle, isPresented: Binding(get: { updates.outcome != nil }, set: { if !$0 { updates.outcome = nil } })) {
             if case .available(let release, _) = updates.outcome {
                 Button("Download") { NSWorkspace.shared.open(release.downloadURL) }
@@ -465,6 +472,7 @@ struct EmptyLibraryView: View {
             Text("Add the folders that hold your Trigger 2 .tci files, and optionally a separate Effects library.\nSample Search never moves or changes them.")
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button("Choose Folders…") { model.showFolders = true }.buttonStyle(.borderedProminent)
+            Button("Show Welcome") { model.showWelcome = true }.controlSize(.small)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

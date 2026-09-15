@@ -121,6 +121,8 @@ final class LibraryModel: ObservableObject {
     @Published private(set) var isScanning = false
     @Published var lastScan: Date?
     @Published var showFolders = false
+    @Published var showWelcome = false
+    @Published var confirmReset = false
     @Published var mode: LibraryMode {
         didSet {
             UserDefaults.standard.set(mode.rawValue, forKey: "libraryMode")
@@ -164,7 +166,30 @@ final class LibraryModel: ObservableObject {
         autoPlay = UserDefaults.standard.bool(forKey: "autoPlay")
         autoExport = UserDefaults.standard.object(forKey: "autoExport") as? Bool ?? true
         mirrorSelection = UserDefaults.standard.object(forKey: "mirrorSelection") as? Bool ?? true
-        if data.roots.isEmpty { showFolders = true }
+        if !hasAnyRoots { showWelcome = true }
+    }
+
+    /// Preference keys the app owns. Library data (tags, favourites, notes, folders) lives in
+    /// library.json and is untouched by a reset.
+    static let preferenceKeys = ["libraryMode", "autoPlay", "autoExport", "mirrorSelection", "browserFolder",
+                                 "showInspector", "tableColumns", "autoCheckUpdates", "lastUpdateCheck",
+                                 "NSWindow Frame MainWindow", "NSToolbar Configuration main"]
+
+    /// Clears preferences only: window, columns, toolbar, toggles, mode, browser-folder location.
+    func resetSettings() {
+        let defaults = UserDefaults.standard
+        for key in Self.preferenceKeys { defaults.removeObject(forKey: key) }
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("NSToolbar Configuration") || key.hasPrefix("NSWindow Frame") {
+            defaults.removeObject(forKey: key)
+        }
+        mode = .instruments
+        autoPlay = false
+        autoExport = true
+        mirrorSelection = true
+        searchText = ""
+        selection = []
+        filter = .all
+        showWelcome = true
     }
 
     /// Files that match the current mode.

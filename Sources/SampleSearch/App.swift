@@ -20,6 +20,12 @@ struct SampleSearchApp: App {
                     Task { await updates.check() }
                 }
                 .disabled(updates.isChecking)
+                Divider()
+                Button("Reset Settings…") { model.confirmReset = true }
+            }
+            CommandGroup(replacing: .help) {
+                Button("Welcome to Sample Search") { model.showWelcome = true }
+                Button("Sample Search on GitHub") { NSWorkspace.shared.open(URL(string: "https://github.com/\(UpdateChecker.repo)")!) }
             }
             CommandGroup(replacing: .newItem) {
                 Button("Library Folders…") { model.showFolders = true }
