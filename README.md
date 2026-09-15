@@ -1,8 +1,5 @@
 # Sample Search
 
-(Formerly *Trigger Search*. Existing metadata, settings and the Trigger browser folder location are
-carried over automatically on first launch.)
-
 A small native macOS app for browsing a library of Slate **Trigger 2** `.tci` instrument files and
 plain `.wav` / `.aiff` one-shots and effects. It replaces Trigger's folder-only browser with search,
 tags and favourites, and feeds them back to Trigger 2 through a folder its own browser can navigate.
