@@ -60,7 +60,7 @@ struct InspectorView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(row.name).font(.title3).bold().textSelection(.enabled)
                 HStack(spacing: 6) {
-                    Label(row.categoryName, systemImage: row.category.symbol)
+                    Label { Text(row.categoryName) } icon: { CategoryIcon(category: row.category) }
                     Text("·"); Label(row.sourceName, systemImage: row.source.symbol)
                     Text("·"); Text(row.format).monospaced()
                     if !row.variant.isEmpty { Text("·"); Text(row.variant).monospaced() }

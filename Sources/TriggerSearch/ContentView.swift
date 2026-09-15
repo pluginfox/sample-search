@@ -123,7 +123,7 @@ struct SidebarView: View {
             }
             Section("Categories") {
                 ForEach(model.categoryCounts, id: \.0) { category, count in
-                    row(category.displayName, category.symbol, count, .category(category))
+                    row(category.displayName, count, .category(category)) { CategoryIcon(category: category) }
                 }
             }
             Section("Source") {
@@ -192,6 +192,11 @@ struct SidebarView: View {
     }
 
     private func row(_ title: String, _ symbol: String, _ count: Int, _ filter: SidebarFilter) -> some View {
+        row(title, count, filter) { Image(systemName: symbol) }
+    }
+
+    private func row<Icon: View>(_ title: String, _ count: Int, _ filter: SidebarFilter,
+                                 @ViewBuilder icon: () -> Icon) -> some View {
         Label {
             HStack {
                 Text(title).lineLimit(1)
@@ -199,7 +204,7 @@ struct SidebarView: View {
                 Text("\(count)").foregroundStyle(.secondary).font(.callout).monospacedDigit()
             }
         } icon: {
-            Image(systemName: symbol)
+            icon()
         }
         .tag(filter)
     }
@@ -264,7 +269,7 @@ struct FileTableView: View {
                     .width(min: 50, ideal: 64)
                     .customizationID("variant")
                     TableColumn("Category", value: \.category) { row in
-                        Label(row.categoryName, systemImage: row.category.symbol).lineLimit(1)
+                        Label { Text(row.categoryName).lineLimit(1) } icon: { CategoryIcon(category: row.category) }
                     }
                     .width(min: 80, ideal: 110)
                     .customizationID("category")

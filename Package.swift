@@ -9,7 +9,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "TriggerSearchKit"),
-        .executableTarget(name: "TriggerSearch", dependencies: ["TriggerSearchKit"]),
+        .target(name: "DrumIcons"),
+        .executableTarget(name: "icon-preview", dependencies: ["DrumIcons"]),
+        .executableTarget(name: "TriggerSearch", dependencies: ["TriggerSearchKit", "DrumIcons"]),
         .testTarget(name: "TriggerSearchKitTests", dependencies: ["TriggerSearchKit"]),
     ]
 )
