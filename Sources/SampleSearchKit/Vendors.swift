@@ -3,7 +3,8 @@ import Foundation
 /// Guesses the vendor / manufacturer from folder names, since `.tci` files carry no metadata.
 public enum Vendors {
     /// Lower-cased substrings, checked in order, mapped to display names.
-    static let keywords: [(String, String)] = [
+    /// A `var` so tests can substitute an invented list; the app never changes it.
+    nonisolated(unsafe) static var keywords: [(String, String)] = [
         ("steven slate", "Steven Slate Drums"), ("slate", "Steven Slate Drums"), ("trigger2", "Steven Slate Drums"),
         ("trigger 2", "Steven Slate Drums"), ("ssd5", "Steven Slate Drums"), ("ssd ", "Steven Slate Drums"),
         ("mixwave", "MixWave"), ("mix wave", "MixWave"),

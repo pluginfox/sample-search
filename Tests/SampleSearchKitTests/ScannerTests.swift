@@ -2,6 +2,19 @@ import XCTest
 @testable import SampleSearchKit
 
 final class ScannerTests: XCTestCase {
+    private var savedVendors: [(String, String)] = []
+
+    override func setUp() {
+        super.setUp()
+        savedVendors = Vendors.keywords
+        Vendors.keywords = TestVendors.keywords
+    }
+
+    override func tearDown() {
+        Vendors.keywords = savedVendors
+        super.tearDown()
+    }
+
     func testScanPicksUpInstrumentsAndOneShots() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-scan-\(UUID().uuidString)")
         let kicks = root.appendingPathComponent("My Pack/Kicks")
@@ -86,13 +99,13 @@ final class ScannerTests: XCTestCase {
         XCTAssertEqual(layout("Acme Pack TCI", ["01a Kick (Gretsch)", "MIXED"]),
                        SampleSearchKit.Scanner.Layout(pack: "Acme Pack TCI", packPath: "/x/Acme Pack TCI"))
         // Vendor-named root with kit folders inside.
-        XCTAssertEqual(layout("Toontrack Samples Historic Edition", ["The Hall", "Kick"]),
-                       SampleSearchKit.Scanner.Layout(pack: "Toontrack Samples Historic Edition", packPath: "/x/Toontrack Samples Historic Edition",
-                             kit: "The Hall", kitPath: "/x/Toontrack Samples Historic Edition/The Hall"))
+        XCTAssertEqual(layout("Acme Samples Historic Edition", ["The Hall", "Kick"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Acme Samples Historic Edition", packPath: "/x/Acme Samples Historic Edition",
+                             kit: "The Hall", kitPath: "/x/Acme Samples Historic Edition/The Hall"))
         // Generic wrapper folders are skipped.
-        XCTAssertEqual(layout("XLN Audio Snares V1", ["TCI", "TCI", "01 RAW", "01 SNARE 1", "01 LO"]),
-                       SampleSearchKit.Scanner.Layout(pack: "XLN Audio Snares V1", packPath: "/x/XLN Audio Snares V1",
-                             kit: "01 RAW", kitPath: "/x/XLN Audio Snares V1/TCI/TCI/01 RAW"))
+        XCTAssertEqual(layout("Bolt Audio Snares V1", ["TCI", "TCI", "01 RAW", "01 SNARE 1", "01 LO"]),
+                       SampleSearchKit.Scanner.Layout(pack: "Bolt Audio Snares V1", packPath: "/x/Bolt Audio Snares V1",
+                             kit: "01 RAW", kitPath: "/x/Bolt Audio Snares V1/TCI/TCI/01 RAW"))
         // Generic root holding several packs: first folder is the pack, next non-category folder the kit.
         XCTAssertEqual(layout("Samples", ["Acme Drums Vol 1", "Kit A", "Kicks"]),
                        SampleSearchKit.Scanner.Layout(pack: "Acme Drums Vol 1", packPath: "/x/Samples/Acme Drums Vol 1",
