@@ -19,8 +19,8 @@ struct ContentView: View {
         }
         .searchable(text: $model.searchText, placement: .toolbar,
                     prompt: "Search \(model.mode.noun)…")
-        .toolbar {
-            ToolbarItem(placement: .principal) {
+        .toolbar(id: "main") {
+            ToolbarItem(id: "mode", placement: .principal) {
                 Picker("Mode", selection: $model.mode) {
                     ForEach(LibraryMode.allCases) { mode in
                         Text(label(for: mode)).tag(mode)
@@ -29,22 +29,32 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .help("Instruments are Trigger .tci files; One-Shots are .wav / .aiff samples; All Trigger is both; Effects is a separate library (risers, impacts…)")
             }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(id: "inspector", placement: .primaryAction) {
                 Button { showInspector.toggle() } label: { Label("Inspector", systemImage: "sidebar.trailing") }
                     .help("Show or hide the inspector (⌥⌘I)")
                     .keyboardShortcut("i", modifiers: [.command, .option])
             }
-            ToolbarItemGroup(placement: .primaryAction) {
+            ToolbarItem(id: "scanning", placement: .primaryAction, showsByDefault: true) {
                 if model.isScanning { ProgressView().controlSize(.small) }
+            }
+            ToolbarItem(id: "autoplay", placement: .primaryAction) {
                 Toggle(isOn: $model.autoPlay) {
                     Label("Play on Select", systemImage: model.autoPlay ? "speaker.wave.2.fill" : "speaker.slash")
                 }
-                .help("Audition one-shots automatically when selected")
+                .help("Audition one-shots and effects automatically when selected")
+            }
+            ToolbarItem(id: "rescan", placement: .primaryAction) {
                 Button { model.rescan() } label: { Label("Rescan", systemImage: "arrow.clockwise") }
                     .help("Rescan library folders (⌘R)")
                     .disabled(model.isScanning)
+            }
+            ToolbarItem(id: "folders", placement: .primaryAction) {
                 Button { model.showFolders = true } label: { Label("Folders", systemImage: "folder.badge.gearshape") }
                     .help("Choose library folders")
+            }
+            ToolbarItem(id: "export", placement: .primaryAction, showsByDefault: false) {
+                Button { model.updateBrowserFolder() } label: { Label("Update Browser Folder", systemImage: "square.and.arrow.up.on.square") }
+                    .help("Rebuild the folder of links Trigger 2's own browser can navigate (⌘E)")
             }
         }
         .sheet(isPresented: $model.showFolders) { FoldersSheet() }

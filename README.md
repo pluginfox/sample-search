@@ -98,6 +98,9 @@ first launch of a downloaded copy right-click › Open (or `xattr -dr com.apple.
 
 ## Window
 
+The toolbar is customisable: right-click it (or View › Customize Toolbar…) to reorder or remove
+items; the browser-folder rebuild button is available there but hidden by default.
+
 Table columns can be reordered by dragging their headers and shown or hidden from the header's
 right-click menu; order, visibility and widths are remembered. Name and the favourite star stay put.
 
