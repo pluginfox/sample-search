@@ -33,6 +33,10 @@ struct SampleSearchApp: App {
                     NSWorkspace.shared.activateFileViewerSelecting([BrowserFolder.url])
                 }
             }
+            CommandGroup(after: .textEditing) {
+                Button("Find") { NotificationCenter.default.post(name: .focusSearch, object: nil) }
+                    .keyboardShortcut("f", modifiers: .command)
+            }
             CommandMenu("Sample") {
                 Button("Play Preview") { model.playSelection() }
                     .keyboardShortcut(.space, modifiers: [])

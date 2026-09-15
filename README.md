@@ -98,6 +98,8 @@ first launch of a downloaded copy right-click › Open (or `xattr -dr com.apple.
 
 ## Window
 
+The search field sits above the table and is always visible; ⌘F focuses it and Escape clears it.
+
 The toolbar is customisable: right-click it (or View › Customize Toolbar…) to reorder or remove
 items; the browser-folder rebuild button is available there but hidden by default.
 

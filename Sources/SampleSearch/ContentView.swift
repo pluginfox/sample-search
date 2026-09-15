@@ -17,8 +17,6 @@ struct ContentView: View {
                         .inspectorColumnWidth(min: 240, ideal: 300, max: 520)
                 }
         }
-        .searchable(text: $model.searchText, placement: .toolbar,
-                    prompt: "Search \(model.mode.noun)…")
         .toolbar(id: "main") {
             ToolbarItem(id: "mode", placement: .principal) {
                 Picker("Mode", selection: $model.mode) {
@@ -229,6 +227,36 @@ struct SidebarView: View {
 
 // MARK: - Table
 
+/// Always-visible search field above the table. ⌘F focuses it, Escape clears it.
+struct SearchBar: View {
+    @EnvironmentObject var model: LibraryModel
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Search \(model.mode.noun)…", text: $model.searchText)
+                .textFieldStyle(.plain)
+                .focused($focused)
+                .onExitCommand { model.searchText = ""; focused = false }
+            if !model.searchText.isEmpty {
+                Button { model.searchText = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                    .buttonStyle(.plain)
+                    .help("Clear search")
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 5)
+        .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 7))
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(.bar)
+        .onReceive(NotificationCenter.default.publisher(for: .focusSearch)) { _ in focused = true }
+    }
+}
+
+extension Notification.Name {
+    static let focusSearch = Notification.Name("SampleSearch.focusSearch")
+}
+
 struct FileTableView: View {
     @EnvironmentObject var model: LibraryModel
     @ObservedObject private var preview = LibraryModel.shared.preview
@@ -361,6 +389,9 @@ struct FileTableView: View {
                     Button("Copy Path") { model.copyPaths(targets) }
                 }
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if model.hasAnyRoots { SearchBar() }
         }
         .safeAreaInset(edge: .bottom) {
             HStack {
