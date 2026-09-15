@@ -11,97 +11,119 @@ struct FoldersSheet: View {
     @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Library Folders").font(.title2).bold()
-            Text("Trigger library: scanned for .tci instruments and .wav / .aiff one-shots.")
-                .foregroundStyle(.secondary)
-            folderList(model.data.roots, remove: model.removeRoot)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Library Folders").font(.title2).bold().padding(.bottom, 12)
 
-            Text("Effects library: a separate set of folders for .wav / .aiff effects (risers, impacts…). Never exported to Trigger's browser folder.")
-                .foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button("Add Effects Folder…") { addFolder(effects: true) }.controlSize(.small)
-            }
-            folderList(model.data.effectRoots, remove: model.removeEffectRoot)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    section("Trigger library",
+                            "Scanned for .tci instruments and .wav / .aiff one-shots.") {
+                        folderList(model.data.roots, remove: model.removeRoot)
+                        HStack {
+                            Button("Add Folder…") { addFolder(effects: false) }
+                            Button {
+                                Task { await findAutomatically() }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    if searching { ProgressView().controlSize(.small) }
+                                    Text("Find TCI Files Automatically")
+                                }
+                            }
+                            .disabled(searching)
+                        }
+                        .controlSize(.small)
+                        suggestionsView
+                    }
 
-            Divider()
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Trigger browser folder").font(.headline)
-                Text("Links to every sample are written here, grouped by Favourites, Tags, Kits and Categories, for Trigger 2's own browser. File › Update Trigger Browser Folder (⌘E) rebuilds it on demand.")
-                    .font(.caption).foregroundStyle(.secondary)
-                HStack {
-                    Text(abbreviated(browserPath)).font(.callout).lineLimit(1).truncationMode(.middle)
-                    Spacer()
-                    Button("Change…") { chooseBrowserFolder() }.controlSize(.small)
-                }
-                Toggle("Update automatically after tagging, favouriting or rescanning", isOn: $model.autoExport)
-                    .font(.callout)
-                Toggle("Show the current selection (or the whole sidebar group when nothing is selected) at the top level of the folder", isOn: $model.mirrorSelection)
-                    .font(.callout)
-            }
-            Divider()
-            Toggle("Check for updates automatically (once a day, from GitHub releases)", isOn: $autoCheckUpdates)
-                .font(.callout)
-            GitHubTokenField()
-            Divider()
+                    section("Effects library",
+                            "A separate set of folders for .wav / .aiff effects (risers, impacts…). Never exported to Trigger's browser folder.") {
+                        folderList(model.data.effectRoots, remove: model.removeEffectRoot)
+                        Button("Add Effects Folder…") { addFolder(effects: true) }.controlSize(.small)
+                    }
 
-            HStack {
-                Button("Add Folder…") { addFolder(effects: false) }
-                Button {
-                    Task { await findAutomatically() }
-                } label: {
-                    HStack {
-                        if searching { ProgressView().controlSize(.small) }
-                        Text("Find TCI Files Automatically")
+                    section("Trigger browser folder",
+                            "Links to every Trigger-library sample are written here, grouped by Favourites, Tags, Kits, Categories, Sources and Vendors, for Trigger 2's own browser. File › Update Trigger Browser Folder (⌘E) rebuilds it on demand.") {
+                        HStack {
+                            Image(systemName: "folder")
+                            Text(abbreviated(browserPath)).font(.callout).lineLimit(1).truncationMode(.middle)
+                            Spacer()
+                            Button("Change…") { chooseBrowserFolder() }.controlSize(.small)
+                        }
+                        Toggle("Update automatically after tagging, favouriting or rescanning", isOn: $model.autoExport)
+                        Toggle("Show the current selection at the top level (or the whole sidebar group when nothing is selected)", isOn: $model.mirrorSelection)
+                    }
+
+                    section("Updates",
+                            "Checks GitHub releases for a newer version.") {
+                        Toggle("Check for updates automatically, once a day", isOn: $autoCheckUpdates)
+                        GitHubTokenField()
                     }
                 }
-                .disabled(searching)
+                .padding(.trailing, 4)
+            }
+
+            Divider().padding(.vertical, 12)
+            HStack {
                 Spacer()
                 Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
             }
+        }
+        .padding(20)
+        .frame(width: 580, height: 720)
+    }
 
-            if let suggestions {
-                Divider()
-                if suggestions.isEmpty {
-                    Text("Spotlight found no .tci files.").foregroundStyle(.secondary)
-                } else {
-                    Text("Spotlight found .tci files in these folders. Tick the ones to add:").font(.callout)
-                    List {
-                        ForEach(suggestions, id: \.root) { item in
-                            let path = item.root.path
-                            let already = model.data.roots.contains(path)
-                            Toggle(isOn: Binding(
-                                get: { already || chosen.contains(path) },
-                                set: { on in if on { chosen.insert(path) } else { chosen.remove(path) } }
-                            )) {
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(item.root.lastPathComponent)
-                                        Text(abbreviated(path)).font(.caption).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Text("\(item.count) files").foregroundStyle(.secondary).font(.callout)
+    /// A titled block with a wrapping caption and its controls, visually separated from the next.
+    private func section<Content: View>(_ title: String, _ caption: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.headline)
+            Text(caption).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            content()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    @ViewBuilder
+    private var suggestionsView: some View {
+        if let suggestions {
+            if suggestions.isEmpty {
+                Text("Spotlight found no .tci files.").font(.callout).foregroundStyle(.secondary)
+            } else {
+                Text("Spotlight found .tci files in these folders. Tick the ones to add:").font(.callout)
+                List {
+                    ForEach(suggestions, id: \.root) { item in
+                        let path = item.root.path
+                        let already = model.data.roots.contains(path)
+                        Toggle(isOn: Binding(
+                            get: { already || chosen.contains(path) },
+                            set: { on in if on { chosen.insert(path) } else { chosen.remove(path) } }
+                        )) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(item.root.lastPathComponent)
+                                    Text(abbreviated(path)).font(.caption).foregroundStyle(.secondary)
                                 }
+                                Spacer()
+                                Text("\(item.count) files").foregroundStyle(.secondary).font(.callout)
                             }
-                            .disabled(already)
                         }
+                        .disabled(already)
                     }
-                    .frame(minHeight: 120)
-                    HStack {
-                        Spacer()
-                        Button("Add Selected") {
-                            for path in chosen { model.addRoot(URL(fileURLWithPath: path)) }
-                            chosen = []
-                            self.suggestions = nil
-                        }
-                        .disabled(chosen.isEmpty)
+                }
+                .frame(height: 140)
+                HStack {
+                    Spacer()
+                    Button("Add Selected") {
+                        for path in chosen { model.addRoot(URL(fileURLWithPath: path)) }
+                        chosen = []
+                        self.suggestions = nil
                     }
+                    .controlSize(.small)
+                    .disabled(chosen.isEmpty)
                 }
             }
         }
-        .padding(20)
-        .frame(width: 560)
     }
 
     private func abbreviated(_ path: String) -> String {
@@ -138,7 +160,9 @@ struct FoldersSheet: View {
                 }
             }
         }
-        .frame(minHeight: 90)
+        .frame(height: max(52, CGFloat(min(roots.count, 4)) * 44 + 8))
+        .scrollContentBackground(.hidden)
+        .background(.background.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
     }
 
     private func addFolder(effects: Bool) {
@@ -177,7 +201,7 @@ struct GitHubTokenField: View {
                 if saved { Text("· saved in Keychain").font(.caption).foregroundStyle(.secondary) }
             }
             Text("Needed only while the repository is private. Create a fine-grained token at github.com › Settings › Developer settings with read access to Contents on pluginfox/sample-search, or a classic token with the repo scope.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 SecureField(saved ? "•••••••••••• (enter a new token to replace)" : "github_pat_…", text: $draft)
                     .textFieldStyle(.roundedBorder)
