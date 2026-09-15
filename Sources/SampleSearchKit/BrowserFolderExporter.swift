@@ -4,7 +4,7 @@ import Foundation
 public struct BrowserEntry {
     public var url: URL
     public var pack: String
-    public var groups: [String]   // relative folders, e.g. "Favourites", "Tags/punchy", "Kits/Vendor One/Kit C"
+    public var groups: [String]   // relative folders, e.g. "Favourites", "Tags/punchy", "Kits/<pack>/<kit>"
 
     public init(url: URL, pack: String, groups: [String]) {
         self.url = url

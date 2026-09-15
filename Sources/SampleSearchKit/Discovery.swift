@@ -51,7 +51,7 @@ public final class TCIFinder: NSObject {
     ]
 
     /// Groups files into suggested roots: the first folder under the generic containers
-    /// (e.g. `~/Downloads/Pack A TCI`), with the number of files inside.
+    /// (e.g. `~/Downloads/Some Pack TCI`), with the number of files inside.
     nonisolated public static func suggestRoots(for files: [URL], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> [(root: URL, count: Int)] {
         let homeName = home.lastPathComponent.lowercased()
         var counts: [String: Int] = [:]

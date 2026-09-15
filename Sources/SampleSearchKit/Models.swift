@@ -175,7 +175,7 @@ public struct TCIFile: Identifiable, Hashable, Codable {
     public let pack: String
     /// Directory the pack name was inferred from; used as the key for pack-level overrides.
     public let packPath: String
-    /// Inferred kit inside the pack (e.g. "Kit C" in Vendor One), nil when the pack has no kit layer.
+    /// Inferred kit inside the pack (e.g. a kit folder inside a pack), nil when the pack has no kit layer.
     public let kit: String?
     /// Directory the kit name was inferred from; key for kit-level overrides.
     public let kitPath: String?

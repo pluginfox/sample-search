@@ -3,11 +3,12 @@ import XCTest
 
 final class VendorTests: XCTestCase {
     func testGuessesFromFolders() {
-        XCTAssertEqual(Vendors.guess(root: "/x/Trigger2Library", folders: ["Trigger2 Snares", "Snare05"]), "Steven Slate Drums")
-        XCTAssertEqual(Vendors.guess(root: "/x/Pack A TCI", folders: ["02a Steel Snare", "MIXED"]), "MixWave")
-        XCTAssertEqual(Vendors.guess(root: "/x/Vendor One Pack C", folders: ["Kit C", "Kick"]), "Vendor One")
-        XCTAssertEqual(Vendors.guess(root: "/x/Vendor Two Pack D", folders: []), "Vendor Two")
-        XCTAssertEqual(Vendors.guess(root: "/x/Pack F", folders: []), "GetGood Drums")
+        // Built-in keywords resolve to their vendor from the root or any folder.
+        XCTAssertEqual(Vendors.guess(root: "/x/Steven Slate Library", folders: ["Trigger Snares", "Snare05"]), "Steven Slate Drums")
+        XCTAssertEqual(Vendors.guess(root: "/x/Some Toontrack Pack", folders: ["Snares"]), "Toontrack")
+        XCTAssertEqual(Vendors.guess(root: "/x/Samples", folders: ["GetGood Drums Vol 1"]), "GetGood Drums")
+        XCTAssertEqual(Vendors.guess(root: "/x/XLN Pack", folders: []), "XLN Audio")
+        // "Vendor - Product" pack names.
         XCTAssertEqual(Vendors.guess(root: "/x/Samples", folders: ["Acme Audio - Big Kicks", "Kicks"]), "Acme Audio")
         XCTAssertNil(Vendors.guess(root: "/x/Samples", folders: ["Random", "Kicks"]))
     }

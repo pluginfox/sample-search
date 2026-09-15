@@ -39,8 +39,8 @@ final class ClassifierTests: XCTestCase {
     }
 
     func testCategoryFallsBackToFolders() {
-        XCTAssertEqual(Classifier.category(name: "Mixed 01", folders: ["Trigger2 Snares", "Snare05"]), .snare)
-        XCTAssertEqual(Classifier.category(name: "MIXED", folders: ["Kit C", "Kick"]), .kick)
+        XCTAssertEqual(Classifier.category(name: "Mixed 01", folders: ["Trigger Snares", "Snare05"]), .snare)
+        XCTAssertEqual(Classifier.category(name: "MIXED", folders: ["The Hall", "Kick"]), .kick)
         XCTAssertEqual(Classifier.category(name: "Take 3", folders: ["02c Black Brass Snare (14x6.5)", "MIXED"]), .snare)
         XCTAssertEqual(Classifier.category(name: "Plain", folders: ["Stuff"]), .other)
     }
@@ -48,14 +48,14 @@ final class ClassifierTests: XCTestCase {
     func testSuggestRoots() {
         let home = URL(fileURLWithPath: "/Users/me")
         let files = [
-            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/Trigger2Library/Snares/S1.tci"),
-            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/Trigger2Library/Kicks/K1.tci"),
-            URL(fileURLWithPath: "/Users/me/Downloads/MixWave TCI/Kick/MIXED/a.tci"),
+            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/TriggerLibrary/Snares/S1.tci"),
+            URL(fileURLWithPath: "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/TriggerLibrary/Kicks/K1.tci"),
+            URL(fileURLWithPath: "/Users/me/Downloads/Acme TCI/Kick/MIXED/a.tci"),
         ]
         let roots = TCIFinder.suggestRoots(for: files, home: home)
         XCTAssertEqual(roots.map(\.root.path), [
-            "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/Trigger2Library",
-            "/Users/me/Downloads/MixWave TCI",
+            "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Documents/TriggerLibrary",
+            "/Users/me/Downloads/Acme TCI",
         ])
         XCTAssertEqual(roots.map(\.count), [2, 1])
     }
