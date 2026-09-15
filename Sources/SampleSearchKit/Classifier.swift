@@ -41,14 +41,17 @@ public enum Classifier {
         (.downlifter, ["downlifter", "downsweep", "down sweep", "downer", "fall", "faller", "drop"]),
         (.impact, ["impact", "boom", "slam", "explosion", "crash fx", "cinematic hit"]),
         (.hit, ["hit", "stab", "punch", "one shot fx", "shot"]),
+        (.cymbal, ["cymbal", "crash", "china", "splash", "ride", "swell", "cym "]),
         (.whoosh, ["whoosh", "swoosh", "sweep", "swish", "wind", "flyby", "fly by", "pass"]),
         (.drone, ["drone", "pad", "texture", "atmos", "ambien", "noise", "bed", "soundscape"]),
     ]
 
     /// Effect type from the file name first, then folders nearest-first; `.other` when nothing matches.
+    /// "Reverse" anywhere in the name wins, so a reversed cymbal or crash files under Reverses.
     public static func effectCategory(name: String, folders: [String]) -> EffectCategory {
         for text in [name] + folders.reversed() {
             let lower = text.lowercased()
+            if effectKeywords[0].1.contains(where: { lower.contains($0) }) { return .reverse }
             var best: (EffectCategory, Int)?
             for (category, keywords) in effectKeywords {
                 for keyword in keywords {

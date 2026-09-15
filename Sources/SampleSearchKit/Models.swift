@@ -77,7 +77,7 @@ public enum SourceType: String, Codable, CaseIterable, Hashable, Comparable {
 
 /// Sound-effect type for the separate Effects library (risers, impacts…).
 public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable {
-    case riser, downlifter, impact, hit, whoosh, drone, reverse, other
+    case riser, downlifter, impact, hit, cymbal, whoosh, drone, reverse, other
 
     public var displayName: String {
         switch self {
@@ -85,6 +85,7 @@ public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable 
         case .downlifter: return "Downlifters"
         case .impact: return "Impacts"
         case .hit: return "Hits & Stabs"
+        case .cymbal: return "Cymbals"
         case .whoosh: return "Whooshes & Sweeps"
         case .drone: return "Drones & Textures"
         case .reverse: return "Reverses"
@@ -98,6 +99,7 @@ public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable 
         case .downlifter: return "Downlifter"
         case .impact: return "Impact"
         case .hit: return "Hit"
+        case .cymbal: return "Cymbal"
         case .whoosh: return "Whoosh"
         case .drone: return "Drone"
         case .reverse: return "Reverse"
@@ -110,10 +112,11 @@ public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable 
         case .riser: return "arrow.up.right"
         case .downlifter: return "arrow.down.right"
         case .impact: return "burst.fill"
-        case .hit: return "bolt.fill"
+        case .hit: return "hammer"
+        case .cymbal: return "sun.max"
         case .whoosh: return "wind"
         case .drone: return "waveform.path"
-        case .reverse: return "arrow.uturn.backward"
+        case .reverse: return "wave.3.forward"
         case .other: return "questionmark.circle"
         }
     }
