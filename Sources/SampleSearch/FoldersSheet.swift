@@ -69,7 +69,7 @@ struct FoldersSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 580, height: 720)
+        .frame(width: 580, height: 880)
     }
 
     /// A titled block with a wrapping caption and its controls, visually separated from the next.
