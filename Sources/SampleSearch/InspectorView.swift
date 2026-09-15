@@ -355,7 +355,7 @@ struct DragTile: View {
             FileDragSource(urls: urls)
             VStack(spacing: 6) {
                 Image(systemName: "hand.draw").font(.system(size: 26))
-                Text(urls.count == 1 ? "Drag one-shot to DAW or Finder" : "Drag \(urls.count) one-shots to DAW or Finder")
+                Text(urls.count == 1 ? "Drag to DAW or Finder" : "Drag \(urls.count) files to DAW or Finder")
                     .font(.callout).bold()
                 Text("Grab here or drag the row itself").font(.caption).foregroundStyle(.secondary)
             }

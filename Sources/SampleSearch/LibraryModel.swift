@@ -54,7 +54,7 @@ struct Row: Identifiable, Hashable {
     var name: String { file.name }
     var kind: FileKind { file.kind }
     var format: String { file.formatName }
-    var isPlayable: Bool { file.kind == .oneShot }
+    var isPlayable: Bool { file.kind == .oneShot || file.kind == .effect }
     var variant: String { file.variant ?? "" }
     var category: DrumCategory { meta.category ?? file.category }
     var isEffect: Bool { file.kind == .effect }
