@@ -210,6 +210,7 @@ struct SidebarView: View {
 struct FileTableView: View {
     @EnvironmentObject var model: LibraryModel
     @ObservedObject private var preview = LibraryModel.shared.preview
+    @State private var columns = ColumnLayout.load()
 
     var body: some View {
         let rows = model.filteredRows
@@ -225,7 +226,7 @@ struct FileTableView: View {
                             ? "No \(model.mode == .oneShots ? "one-shots (.wav / .aiff)" : "Trigger instruments (.tci)") in the library folders. Switch mode or add a folder."
                             : "Nothing matches the current search and filter.")
             } else {
-                Table(selection: $model.selection, sortOrder: $model.sortOrder) {
+                Table(selection: $model.selection, sortOrder: $model.sortOrder, columnCustomization: $columns) {
                     TableColumn("", value: \.favoriteRank) { row in
                         Button { model.toggleFavorite([row.id]) } label: {
                             Image(systemName: row.favorite ? "star.fill" : "star")
@@ -234,6 +235,8 @@ struct FileTableView: View {
                         .buttonStyle(.plain)
                     }
                     .width(24)
+                    .customizationID("favorite")
+                    .disabledCustomizationBehavior(.all)
                     TableColumn("Name", value: \.name) { row in
                         HStack(spacing: 6) {
                             if row.isPlayable {
@@ -248,47 +251,59 @@ struct FileTableView: View {
                         }
                     }
                     .width(min: 160, ideal: 240)
+                    .customizationID("name")
+                    .disabledCustomizationBehavior(.visibility)
                     TableColumn("Type", value: \.format) { row in
                         Text(row.format).font(.caption).monospaced().foregroundStyle(.secondary)
                     }
                     .width(min: 40, ideal: 44)
+                    .customizationID("type")
                     TableColumn("Variant", value: \.variant) { row in
                         Text(row.variant).foregroundStyle(.secondary).monospaced()
                     }
                     .width(min: 50, ideal: 64)
-                    TableColumn("DrumCategory", value: \.category) { row in
+                    .customizationID("variant")
+                    TableColumn("Category", value: \.category) { row in
                         Label(row.categoryName, systemImage: row.category.symbol).lineLimit(1)
                     }
                     .width(min: 80, ideal: 110)
+                    .customizationID("category")
                     TableColumn("Source", value: \.source) { row in
                         Label(row.sourceName, systemImage: row.source.symbol).lineLimit(1).foregroundStyle(.secondary)
                     }
                     .width(min: 80, ideal: 100)
+                    .customizationID("source")
                     TableColumn("Vendor", value: \.vendor) { row in
                         Text(row.vendor.isEmpty ? "—" : row.vendor).lineLimit(1).foregroundStyle(.secondary)
                     }
                     .width(min: 90, ideal: 130)
+                    .customizationID("vendor")
                     Group {
                     TableColumn("Pack", value: \Row.pack) { (row: Row) in
                         Text(row.pack).lineLimit(1).foregroundStyle(.secondary)
                     }
                     .width(min: 100, ideal: 170)
+                    .customizationID("pack")
                     TableColumn("Kit", value: \Row.kit) { (row: Row) in
                         Text(row.kit.isEmpty ? "—" : row.kit).lineLimit(1).foregroundStyle(.secondary)
                     }
                     .width(min: 80, ideal: 120)
+                    .customizationID("kit")
                     TableColumn("Folder", value: \Row.folder) { (row: Row) in
                         Text(row.folder).lineLimit(1).foregroundStyle(.secondary).help(row.folder)
                     }
                     .width(min: 100, ideal: 200)
+                    .customizationID("folder")
                     TableColumn("Tags", value: \Row.tagsJoined) { (row: Row) in
                         Text(row.tagsJoined).lineLimit(1).foregroundStyle(.secondary)
                     }
                     .width(min: 80, ideal: 160)
+                    .customizationID("tags")
                     TableColumn("Notes", value: \Row.notesOneLine) { (row: Row) in
                         Text(row.notesOneLine).lineLimit(1).foregroundStyle(.secondary).help(row.notes)
                     }
                     .width(min: 80, ideal: 200)
+                    .customizationID("notes")
                     }
                 } rows: {
                     ForEach(rows) { row in
@@ -296,6 +311,7 @@ struct FileTableView: View {
                             .itemProvider { NSItemProvider(object: row.file.url as NSURL) }
                     }
                 }
+                .onChange(of: columns) { _, new in ColumnLayout.save(new) }
                 .contextMenu(forSelectionType: String.self) { ids in
                     let targets = ids.isEmpty ? model.selection : ids
                     Button("Toggle Favourite") { model.toggleFavorite(targets) }
@@ -325,6 +341,23 @@ struct FileTableView: View {
             .padding(.vertical, 6)
             .background(.bar)
         }
+    }
+}
+
+/// Persists column order, visibility and widths between launches.
+enum ColumnLayout {
+    static let key = "tableColumns"
+
+    static func load() -> TableColumnCustomization<Row> {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let saved = try? JSONDecoder().decode(TableColumnCustomization<Row>.self, from: data) else {
+            return TableColumnCustomization<Row>()
+        }
+        return saved
+    }
+
+    static func save(_ customization: TableColumnCustomization<Row>) {
+        if let data = try? JSONEncoder().encode(customization) { UserDefaults.standard.set(data, forKey: key) }
     }
 }
 

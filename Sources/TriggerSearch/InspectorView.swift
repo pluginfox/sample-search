@@ -115,7 +115,7 @@ struct InspectorView: View {
         let overridden = rows.contains { $0.meta.category != nil }
         return VStack(alignment: .leading, spacing: 6) {
             Text("DrumCategory").font(.headline)
-            Picker("DrumCategory", selection: Binding<DrumCategory?>(
+            Picker("Category", selection: Binding<DrumCategory?>(
                 get: { categories.count == 1 ? categories.first : nil },
                 set: { if let c = $0 { model.setCategory(c, for: ids) } }
             )) {

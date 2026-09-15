@@ -84,6 +84,9 @@ first launch of a downloaded copy right-click › Open (or `xattr -dr com.apple.
 
 ## Window
 
+Table columns can be reordered by dragging their headers and shown or hidden from the header's
+right-click menu; order, visibility and widths are remembered. Name and the favourite star stay put.
+
 First launch opens at 1280×780 (minimum 900×500) with the sidebar at ~220pt and the inspector at
 ~300pt. The window's size and position are saved on close and restored on the next launch. Drag the
 column dividers to resize the sidebar or inspector. The toolbar's sidebar button (⌃⌘S) hides the
