@@ -13,6 +13,7 @@ struct WelcomeSheet: View {
                     Text("Welcome to Sample Search").font(.title2).bold()
                     Text("A searchable, taggable front end for your Trigger 2 library and sound effects.")
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
