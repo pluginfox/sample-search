@@ -21,6 +21,39 @@ final class ScannerTests: XCTestCase {
         XCTAssertEqual(Set(files.map(\.packPath)), [root.standardizedFileURL.path + "/My Pack"])
     }
 
+    func testCollectionRootKeepsDrumNamedFoldersAsPacks() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-coll-\(UUID().uuidString)")
+        let layout: [String: [String]] = [
+            "Pack H Snares/Kit H": ["BB Snare 1.tci"],
+            "Pack I_s Samples/Crash Samples": ["Crash A.tci"],
+            "Pack F": ["P5 Kick.tci"],
+            "Pack J Kicks": ["DK 1.tci"],
+            "Pack G/Kit A": ["AG Snare.tci"],
+        ]
+        for (dir, names) in layout {
+            let d = root.appendingPathComponent(dir)
+            try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+            for n in names { try Data("x".utf8).write(to: d.appendingPathComponent(n)) }
+        }
+        defer { try? FileManager.default.removeItem(at: root) }
+        let files = SampleSearchKit.Scanner.scan(roots: [root])
+        let packs = Dictionary(uniqueKeysWithValues: files.map { ($0.name, $0.pack) })
+        XCTAssertEqual(packs["BB Snare 1"], "Pack H Snares")
+        XCTAssertEqual(packs["Crash A"], "Pack I_s Samples")
+        XCTAssertEqual(packs["DK 1"], "Pack J Kicks")
+        XCTAssertEqual(packs["P5 Kick"], "Pack F")
+        XCTAssertEqual(files.first { $0.name == "BB Snare 1" }?.kit, "Kit H")
+        XCTAssertNil(files.first { $0.name == "Crash A" }?.kit, "category-named subfolder is not a kit")
+        XCTAssertEqual(files.first { $0.name == "AG Snare" }?.kit, "Kit A")
+
+        // A root whose subfolders are mostly categories is itself the pack.
+        XCTAssertTrue(SampleSearchKit.Scanner.rootIsPackDecision(rootName: "Trigger2Library",
+            firstLevelFolders: ["Trigger2 Snares", "Trigger2 Kicks", "Trigger2 Toms", "Trigger2 Deluxe"]))
+        XCTAssertFalse(SampleSearchKit.Scanner.rootIsPackDecision(rootName: "Trigger Samples",
+            firstLevelFolders: ["Pack H Snares", "Pack I_s Samples", "Pack F", "Pack J Kicks", "Pack G"]))
+        XCTAssertFalse(Classifier.category(in: "Pack I_s Samples") != nil, "'s' alone is not a snare")
+    }
+
     func testEffectsRootsScanAudioAsEffects() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-fx-\(UUID().uuidString)")
         let dir = root.appendingPathComponent("Cinematic Pack/Risers")

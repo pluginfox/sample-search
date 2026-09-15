@@ -23,7 +23,7 @@ public enum Scanner {
             return []
         }
         let rootPath = root.standardizedFileURL.path
-        var files: [TCIFile] = []
+        var found: [(url: URL, kind: FileKind, size: Int64, modified: Date)] = []
         for case let url as URL in enumerator {
             guard var kind = FileKind.extensions[url.pathExtension.lowercased()] else { continue }
             if asEffects {
@@ -31,11 +31,35 @@ public enum Scanner {
                 kind = .effect
             }
             guard let values = try? url.resourceValues(forKeys: Set(keys)), values.isRegularFile == true else { continue }
-            files.append(make(url: url, kind: kind, rootPath: rootPath, rootName: root.lastPathComponent,
-                              size: Int64(values.fileSize ?? 0),
-                              modified: values.contentModificationDate ?? .distantPast))
+            found.append((url, kind, Int64(values.fileSize ?? 0), values.contentModificationDate ?? .distantPast))
         }
-        return files
+        // Decide once per root whether the root itself is the pack, from all its first-level folders.
+        let firstLevel = Set(found.compactMap { entry -> String? in
+            let rel = relativeFolders(of: entry.url, rootPath: rootPath)
+            return rel.first { !genericFolders.contains($0.lowercased()) }
+        })
+        let rootIsPack = rootIsPackDecision(rootName: root.lastPathComponent, firstLevelFolders: firstLevel)
+        return found.map { entry in
+            make(url: entry.url, kind: entry.kind, rootPath: rootPath, rootName: root.lastPathComponent,
+                 size: entry.size, modified: entry.modified, rootIsPack: rootIsPack)
+        }
+    }
+
+    /// The root is the pack when it names a vendor/product, holds files directly, or when most of
+    /// its first-level folders are category folders ("Trigger2 Snares", "Kicks"). A root that is a
+    /// collection of many packs (some with drum words in their names) keeps each folder as a pack.
+    public static func rootIsPackDecision(rootName: String, firstLevelFolders: Set<String>) -> Bool {
+        if Vendors.guess(text: rootName) != nil { return true }
+        if firstLevelFolders.isEmpty { return true }
+        let categoryLike = firstLevelFolders.filter { Classifier.category(in: $0) != nil }.count
+        return categoryLike * 2 > firstLevelFolders.count
+    }
+
+    static func relativeFolders(of url: URL, rootPath: String) -> [String] {
+        let path = url.standardizedFileURL.path
+        var relative = path.hasPrefix(rootPath + "/") ? String(path.dropFirst(rootPath.count + 1)) : url.lastPathComponent
+        relative = (relative as NSString).deletingLastPathComponent
+        return relative.isEmpty ? [] : relative.components(separatedBy: "/")
     }
 
     public struct Layout: Equatable {
@@ -54,7 +78,7 @@ public enum Scanner {
     /// Pack: the first meaningful folder under the root, unless that folder is a category
     /// ("Trigger2 Snares", "01a Kick (...)") or the root itself names a vendor/product, in which case
     /// the root is the pack. Kit: the next meaningful folder inside the pack, unless it is a category.
-    static func inferLayout(rootPath: String, rootName: String, folders: [String]) -> Layout {
+    static func inferLayout(rootPath: String, rootName: String, folders: [String], rootIsPack forced: Bool? = nil) -> Layout {
         var meaningful: [(name: String, path: String)] = []
         var path = rootPath
         for folder in folders {
@@ -62,9 +86,8 @@ public enum Scanner {
             if genericFolders.contains(folder.lowercased()) { continue }
             meaningful.append((folder, path))
         }
-        let rootIsPack = meaningful.isEmpty
-            || Classifier.category(in: meaningful[0].name) != nil
-            || Vendors.guess(text: rootName) != nil
+        let rootIsPack = meaningful.isEmpty || (forced ?? (Classifier.category(in: meaningful[0].name) != nil
+                                                          || Vendors.guess(text: rootName) != nil))
         var layout: Layout
         var next: Int
         if rootIsPack {
@@ -81,14 +104,15 @@ public enum Scanner {
         return layout
     }
 
-    static func make(url: URL, kind: FileKind, rootPath: String, rootName: String, size: Int64, modified: Date) -> TCIFile {
+    static func make(url: URL, kind: FileKind, rootPath: String, rootName: String, size: Int64, modified: Date,
+                     rootIsPack: Bool? = nil) -> TCIFile {
         let path = url.standardizedFileURL.path
         let name = url.deletingPathExtension().lastPathComponent
         var relative = path.hasPrefix(rootPath + "/") ? String(path.dropFirst(rootPath.count + 1)) : url.lastPathComponent
         relative = (relative as NSString).deletingLastPathComponent
         let folders = relative.isEmpty ? [] : relative.components(separatedBy: "/")
         let (base, variant) = Classifier.splitVariant(name)
-        let layout = inferLayout(rootPath: rootPath, rootName: rootName, folders: folders)
+        let layout = inferLayout(rootPath: rootPath, rootName: rootName, folders: folders, rootIsPack: rootIsPack)
         return TCIFile(path: path, kind: kind, name: name, baseName: base, variant: variant,
                        root: rootPath, pack: layout.pack, packPath: layout.packPath,
                        kit: layout.kit, kitPath: layout.kitPath, folder: relative,

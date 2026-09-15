@@ -14,8 +14,8 @@ public enum Classifier {
 
     /// Short keywords only matched as whole words.
     private static let tokenKeywords: [(DrumCategory, Set<String>)] = [
-        (.kick, ["bd", "kck", "kik", "k"]),
-        (.snare, ["sn", "sd", "s"]),
+        (.kick, ["bd", "kck", "kik"]),
+        (.snare, ["sn", "sd"]),
         (.tom, ["t1", "t2", "t3", "t4", "ft", "rt", "ht", "mt", "lt"]),
         (.hihat, ["hh", "hats"]),
         (.cymbal, ["cym", "cyms", "cr", "rd"]),
