@@ -11,7 +11,7 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 
 - **Modes** in the toolbar: *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`), *All Trigger*
   (both) and *Effects*, a completely separate library of `.wav` / `.aiff`
-  sound effects (risers, downlifters, impacts, hits, cymbals, whooshes, drones, reverses) scanned from its
+  sound effects (risers, downlifters, sub drops, impacts, hits, cymbals, whooshes, drones, reverses) scanned from its
   own folders, classified by type from names, and never written to the Trigger browser folder.
   Effects share tags, favourites, notes, packs, kits, vendors, preview and search with the rest.
   The mode is remembered between launches.

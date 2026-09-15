@@ -38,6 +38,7 @@ public enum Classifier {
     private static let effectKeywords: [(EffectCategory, [String])] = [
         (.reverse, ["reverse", "reversed", "backward", "rev "]),
         (.riser, ["riser", "uplifter", "upsweep", "up sweep", "rise", "build", "tension"]),
+        (.subdrop, ["sub drop", "subdrop", "sub-drop", "bass drop", "808 drop", "sub bass", "sub "]),
         (.downlifter, ["downlifter", "downsweep", "down sweep", "downer", "fall", "faller", "drop"]),
         (.impact, ["impact", "boom", "slam", "explosion", "crash fx", "cinematic hit"]),
         (.hit, ["hit", "stab", "punch", "one shot fx", "shot"]),

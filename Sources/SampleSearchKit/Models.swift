@@ -77,12 +77,13 @@ public enum SourceType: String, Codable, CaseIterable, Hashable, Comparable {
 
 /// Sound-effect type for the separate Effects library (risers, impacts…).
 public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable {
-    case riser, downlifter, impact, hit, cymbal, whoosh, drone, reverse, other
+    case riser, downlifter, subdrop, impact, hit, cymbal, whoosh, drone, reverse, other
 
     public var displayName: String {
         switch self {
         case .riser: return "Risers"
         case .downlifter: return "Downlifters"
+        case .subdrop: return "Sub Drops"
         case .impact: return "Impacts"
         case .hit: return "Hits & Stabs"
         case .cymbal: return "Cymbals"
@@ -97,6 +98,7 @@ public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable 
         switch self {
         case .riser: return "Riser"
         case .downlifter: return "Downlifter"
+        case .subdrop: return "Sub Drop"
         case .impact: return "Impact"
         case .hit: return "Hit"
         case .cymbal: return "Cymbal"
@@ -111,6 +113,7 @@ public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable 
         switch self {
         case .riser: return "arrow.up.right"
         case .downlifter: return "arrow.down.right"
+        case .subdrop: return "arrow.down.to.line"
         case .impact: return "burst.fill"
         case .hit: return "hammer"
         case .cymbal: return "sun.max"

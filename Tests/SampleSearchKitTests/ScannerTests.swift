@@ -25,14 +25,14 @@ final class ScannerTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-fx-\(UUID().uuidString)")
         let dir = root.appendingPathComponent("Cinematic Pack/Risers")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        for name in ["Big Riser 01.wav", "Crash Swell.wav", "Impact Boom.aiff", "Reverse Cymbal.wav", "Snare Hit.wav", "notes.tci"] {
+        for name in ["808 Sub Drop.wav", "Big Riser 01.wav", "Crash Swell.wav", "Impact Boom.aiff", "Reverse Cymbal.wav", "Snare Hit.wav", "notes.tci"] {
             try Data("x".utf8).write(to: dir.appendingPathComponent(name))
         }
         defer { try? FileManager.default.removeItem(at: root) }
         let files = SampleSearchKit.Scanner.scan(roots: [], effectRoots: [root]).sorted { $0.name < $1.name }
-        XCTAssertEqual(files.map(\.name), ["Big Riser 01", "Crash Swell", "Impact Boom", "Reverse Cymbal", "Snare Hit"], ".tci ignored in effects roots")
+        XCTAssertEqual(files.map(\.name), ["808 Sub Drop", "Big Riser 01", "Crash Swell", "Impact Boom", "Reverse Cymbal", "Snare Hit"], ".tci ignored in effects roots")
         XCTAssertTrue(files.allSatisfy { $0.kind == .effect })
-        XCTAssertEqual(files.map(\.effectCategory), [.riser, .cymbal, .impact, .reverse, .hit])
+        XCTAssertEqual(files.map(\.effectCategory), [.subdrop, .riser, .cymbal, .impact, .reverse, .hit])
         XCTAssertEqual(Set(files.map(\.pack)), ["Cinematic Pack"])
     }
 
