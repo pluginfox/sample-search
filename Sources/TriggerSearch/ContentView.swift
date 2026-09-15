@@ -254,6 +254,10 @@ struct FileTableView: View {
                         Text(row.tagsJoined).lineLimit(1).foregroundStyle(.secondary)
                     }
                     .width(min: 80, ideal: 160)
+                    TableColumn("Notes", value: \Row.notesOneLine) { (row: Row) in
+                        Text(row.notesOneLine).lineLimit(1).foregroundStyle(.secondary).help(row.notes)
+                    }
+                    .width(min: 80, ideal: 200)
                     }
                 } rows: {
                     ForEach(rows) { row in

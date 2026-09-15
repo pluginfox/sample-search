@@ -24,6 +24,7 @@ struct InspectorView: View {
                         favoriteSection(rows)
                         Divider()
                         tagSection(rows)
+                        if rows.count == 1 { Divider(); NotesSection(row: rows[0]) }
                         Divider()
                         categorySection(rows)
                         sourceSection(rows)
@@ -174,6 +175,52 @@ struct InspectorView: View {
             Button("Reveal in Finder") { model.revealInFinder(ids) }
                 .controlSize(.small)
         }
+    }
+}
+
+/// Free-text notes for one file. Saved as you type (debounced); searchable but not exported.
+struct NotesSection: View {
+    @EnvironmentObject var model: LibraryModel
+    var row: Row
+    @State private var draft = ""
+    @State private var saveTask: Task<Void, Never>?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Notes").font(.headline)
+            TextEditor(text: $draft)
+                .font(.callout)
+                .frame(minHeight: 60, maxHeight: 140)
+                .scrollContentBackground(.hidden)
+                .padding(4)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                .overlay(alignment: .topLeading) {
+                    if draft.isEmpty {
+                        Text("Anything worth remembering about this sample…")
+                            .font(.callout).foregroundStyle(.tertiary)
+                            .padding(.horizontal, 9).padding(.vertical, 8)
+                            .allowsHitTesting(false)
+                    }
+                }
+        }
+        .onAppear { draft = row.notes }
+        .onChange(of: row.id) { _, _ in saveNow(); draft = row.notes }
+        .onChange(of: draft) { _, new in
+            guard new != row.notes else { return }
+            saveTask?.cancel()
+            let id = row.id
+            saveTask = Task {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                guard !Task.isCancelled else { return }
+                model.setNotes(new, for: id)
+            }
+        }
+        .onDisappear { saveNow() }
+    }
+
+    private func saveNow() {
+        saveTask?.cancel()
+        if draft != row.notes { model.setNotes(draft, for: row.id) }
     }
 }
 

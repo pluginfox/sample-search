@@ -163,24 +163,29 @@ public struct ItemMeta: Codable, Hashable {
     public var source: SourceType?
     /// Manual kit assignment; wins over the folder-based kit.
     public var kit: String?
+    /// Free-text notes; searchable, not exported to the browser folder.
+    public var notes: String = ""
     /// File name and size, kept so metadata can follow a file that moves to another folder.
     public var fileName: String = ""
     public var fileSize: Int64 = 0
 
     public init(tags: [String] = [], favorite: Bool = false, category: DrumCategory? = nil, source: SourceType? = nil,
-                kit: String? = nil, fileName: String = "", fileSize: Int64 = 0) {
+                kit: String? = nil, notes: String = "", fileName: String = "", fileSize: Int64 = 0) {
         self.tags = tags
         self.favorite = favorite
         self.category = category
         self.source = source
         self.kit = kit
+        self.notes = notes
         self.fileName = fileName
         self.fileSize = fileSize
     }
 
-    public var isEmpty: Bool { tags.isEmpty && !favorite && category == nil && source == nil && kit == nil }
+    public var isEmpty: Bool {
+        tags.isEmpty && !favorite && category == nil && source == nil && kit == nil && notes.isEmpty
+    }
 
-    enum CodingKeys: String, CodingKey { case tags, favorite, category, source, kit, fileName, fileSize }
+    enum CodingKeys: String, CodingKey { case tags, favorite, category, source, kit, notes, fileName, fileSize }
 
     /// Tolerant decoding: an old "room" category override becomes a Rooms source override.
     public init(from decoder: Decoder) throws {
@@ -192,6 +197,7 @@ public struct ItemMeta: Codable, Hashable {
         source = try c.decodeIfPresent(String.self, forKey: .source).flatMap(SourceType.init(rawValue:))
         if rawCategory == "room", source == nil { source = .rooms }
         kit = try c.decodeIfPresent(String.self, forKey: .kit)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
         fileName = try c.decodeIfPresent(String.self, forKey: .fileName) ?? ""
         fileSize = try c.decodeIfPresent(Int64.self, forKey: .fileSize) ?? 0
     }

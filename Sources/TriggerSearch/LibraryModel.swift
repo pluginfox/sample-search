@@ -57,6 +57,8 @@ struct Row: Identifiable, Hashable {
     var sourceName: String { source.displayName }
     var folder: String { file.folder }
     var tags: [String] { meta.tags }
+    var notes: String { meta.notes }
+    var notesOneLine: String { meta.notes.replacingOccurrences(of: "\n", with: " ") }
     var tagsJoined: String { meta.tags.joined(separator: ", ") }
     var favorite: Bool { meta.favorite }
     var favoriteRank: Int { meta.favorite ? 0 : 1 }
@@ -223,7 +225,7 @@ final class LibraryModel: ObservableObject {
         let terms = searchText.lowercased().split(separator: " ").map(String.init)
         return allRows.filter { row in
             guard !terms.isEmpty else { return matches(filter, row: row) }
-            let haystack = [row.name, row.folder, row.pack, row.kit, row.categoryName, row.sourceName, row.tagsJoined, row.variant, row.vendor]
+            let haystack = [row.name, row.folder, row.pack, row.kit, row.categoryName, row.sourceName, row.tagsJoined, row.variant, row.vendor, row.notes]
                 .joined(separator: " ").lowercased()
             return terms.allSatisfy { haystack.contains($0) }
         }
@@ -398,7 +400,12 @@ final class LibraryModel: ObservableObject {
 
     // MARK: - Metadata edits
 
-    private func update(_ ids: Set<String>, _ change: (inout ItemMeta) -> Void) {
+    /// Notes are per file and never affect the browser folder, so saving them skips the export.
+    func setNotes(_ text: String, for id: String) {
+        update([id], triggersExport: false) { $0.notes = text.trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+
+    private func update(_ ids: Set<String>, triggersExport: Bool = true, _ change: (inout ItemMeta) -> Void) {
         let byPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0) })
         for id in ids {
             var meta = data.items[id] ?? ItemMeta()
@@ -409,7 +416,7 @@ final class LibraryModel: ObservableObject {
             change(&meta)
             if meta.isEmpty { data.items.removeValue(forKey: id) } else { data.items[id] = meta }
         }
-        persist()
+        persist(triggersExport: triggersExport)
     }
 
     func toggleFavorite(_ ids: Set<String>) {
@@ -543,8 +550,8 @@ final class LibraryModel: ObservableObject {
         NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 
-    private func persist() {
+    private func persist(triggersExport: Bool = true) {
         do { try store.save(data) } catch { NSLog("Trigger Search: failed to save library: \(error)") }
-        scheduleAutoExport()
+        if triggersExport { scheduleAutoExport() }
     }
 }

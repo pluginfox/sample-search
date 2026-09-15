@@ -33,6 +33,8 @@ favourites, and lets you drag a sample straight onto a Trigger 2 slot in your DA
   ignores the sidebar selection. Clicking a sidebar item clears the search.
 - **Tags** with quick-add suggestions from tags you already use. Select several rows to tag them at once.
   Rename or delete a tag from its sidebar context menu.
+- **Notes**: free text per sample in the inspector, saved as you type, shown in a Notes column and
+  included in search. Notes are not exported to the browser folder.
 - **Favourites** (star column, ⌘D, or the inspector button).
 - **Drag and drop for one-shots**: drag WAV/AIFF rows, or the drag tile in the inspector, onto a DAW
   track, sampler or Finder window. Nothing is ever moved or renamed. (`.tci` files have no drag tile:
