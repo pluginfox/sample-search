@@ -35,6 +35,34 @@ public enum Classifier {
         (.direct, ["dir", "di", "in", "out", "sub"]),
     ]
 
+    private static let effectKeywords: [(EffectCategory, [String])] = [
+        (.reverse, ["reverse", "reversed", "backward", "rev "]),
+        (.riser, ["riser", "uplifter", "upsweep", "up sweep", "rise", "build", "tension"]),
+        (.downlifter, ["downlifter", "downsweep", "down sweep", "downer", "fall", "faller", "drop"]),
+        (.impact, ["impact", "boom", "slam", "explosion", "crash fx", "cinematic hit"]),
+        (.hit, ["hit", "stab", "punch", "one shot fx", "shot"]),
+        (.whoosh, ["whoosh", "swoosh", "sweep", "swish", "wind", "flyby", "fly by", "pass"]),
+        (.drone, ["drone", "pad", "texture", "atmos", "ambien", "noise", "bed", "soundscape"]),
+    ]
+
+    /// Effect type from the file name first, then folders nearest-first; `.other` when nothing matches.
+    public static func effectCategory(name: String, folders: [String]) -> EffectCategory {
+        for text in [name] + folders.reversed() {
+            let lower = text.lowercased()
+            var best: (EffectCategory, Int)?
+            for (category, keywords) in effectKeywords {
+                for keyword in keywords {
+                    if let range = lower.range(of: keyword) {
+                        let index = lower.distance(from: lower.startIndex, to: range.lowerBound)
+                        if best == nil || index < best!.1 { best = (category, index) }
+                    }
+                }
+            }
+            if let best { return best.0 }
+        }
+        return .other
+    }
+
     /// Source from the file name first, then folders nearest-first; Direct when nothing matches.
     public static func source(name: String, folders: [String]) -> SourceType {
         for text in [name] + folders.reversed() {

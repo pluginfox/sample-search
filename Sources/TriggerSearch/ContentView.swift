@@ -27,7 +27,7 @@ struct ContentView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .help("Instruments are Trigger .tci files; One-Shots are .wav / .aiff samples")
+                .help("Instruments are Trigger .tci files; One-Shots are .wav / .aiff samples; Effects is a separate library (risers, impacts…)")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button { showInspector.toggle() } label: { Label("Inspector", systemImage: "sidebar.trailing") }
@@ -64,7 +64,7 @@ struct ContentView: View {
             Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([BrowserFolder.url]) }
             Button("OK", role: .cancel) {}
         } message: { Text(model.browserFolderMessage ?? "") }
-        .onAppear { if !model.roots.isEmpty { model.rescan() } }
+        .onAppear { if model.hasAnyRoots { model.rescan() } }
         .onChange(of: model.selection) { _ in model.selectionChanged() }
         .frame(minWidth: 900, minHeight: 500)
     }
@@ -95,6 +95,7 @@ struct ContentView: View {
         case .instruments: return "Instruments (\(model.instrumentCount))"
         case .oneShots: return "One-Shots (\(model.oneShotCount))"
         case .all: return "All"
+        case .effects: return "Effects (\(model.effectCount))"
         }
     }
 }
@@ -121,14 +122,22 @@ struct SidebarView: View {
                 row("Favourites", "star.fill", model.favoriteCount, .favorites)
                 row("Untagged", "tag.slash", model.untaggedCount, .untagged)
             }
-            Section("Categories") {
-                ForEach(model.categoryCounts, id: \.0) { category, count in
-                    row(category.displayName, count, .category(category)) { CategoryIcon(category: category) }
+            if model.mode.isEffects {
+                Section("Types") {
+                    ForEach(model.effectCategoryCounts, id: \.0) { category, count in
+                        row(category.displayName, category.symbol, count, .effectCategory(category))
+                    }
                 }
-            }
-            Section("Source") {
-                ForEach(model.sourceCounts, id: \.0) { source, count in
-                    row(source.displayName, source.symbol, count, .source(source))
+            } else {
+                Section("Categories") {
+                    ForEach(model.categoryCounts, id: \.0) { category, count in
+                        row(category.displayName, count, .category(category)) { CategoryIcon(category: category) }
+                    }
+                }
+                Section("Source") {
+                    ForEach(model.sourceCounts, id: \.0) { source, count in
+                        row(source.displayName, source.symbol, count, .source(source))
+                    }
                 }
             }
             Section("Vendors") {
@@ -220,7 +229,7 @@ struct FileTableView: View {
     var body: some View {
         let rows = model.filteredRows
         Group {
-            if model.roots.isEmpty {
+            if !model.hasAnyRoots {
                 EmptyLibraryView()
             } else if rows.isEmpty {
                 ContentUnavailableCompat(
@@ -228,7 +237,9 @@ struct FileTableView: View {
                     detail: model.files.isEmpty && !model.isScanning
                         ? "No .tci, .wav or .aiff files were found in the library folders."
                         : model.visibleFiles.isEmpty
-                            ? "No \(model.mode == .oneShots ? "one-shots (.wav / .aiff)" : "Trigger instruments (.tci)") in the library folders. Switch mode or add a folder."
+                            ? (model.mode.isEffects
+                                ? "No effects yet. Add an Effects folder in the Folders sheet."
+                                : "No \(model.mode == .oneShots ? "one-shots (.wav / .aiff)" : "Trigger instruments (.tci)") in the library folders. Switch mode or add a folder.")
                             : "Nothing matches the current search and filter.")
             } else {
                 Table(selection: $model.selection, sortOrder: $model.sortOrder, columnCustomization: $columns) {
@@ -268,13 +279,19 @@ struct FileTableView: View {
                     }
                     .width(min: 50, ideal: 64)
                     .customizationID("variant")
-                    TableColumn("Category", value: \.category) { row in
-                        Label { Text(row.categoryName).lineLimit(1) } icon: { CategoryIcon(category: row.category) }
+                    TableColumn(model.mode.isEffects ? "Type" : "Category", value: \.categoryName) { row in
+                        Label { Text(row.categoryName).lineLimit(1) } icon: {
+                            if row.isEffect { Image(systemName: row.categorySymbol) } else { CategoryIcon(category: row.category) }
+                        }
                     }
                     .width(min: 80, ideal: 110)
                     .customizationID("category")
                     TableColumn("Source", value: \.source) { row in
-                        Label(row.sourceName, systemImage: row.source.symbol).lineLimit(1).foregroundStyle(.secondary)
+                        if row.isEffect {
+                            Text("—").foregroundStyle(.tertiary)
+                        } else {
+                            Label(row.sourceName, systemImage: row.source.symbol).lineLimit(1).foregroundStyle(.secondary)
+                        }
                     }
                     .width(min: 80, ideal: 100)
                     .customizationID("source")
@@ -388,7 +405,7 @@ struct EmptyLibraryView: View {
         VStack(spacing: 14) {
             Image(systemName: "folder.badge.plus").font(.system(size: 44)).foregroundStyle(.tertiary)
             Text("No Library Folders").font(.title2).bold()
-            Text("Add the folders that hold your Trigger 2 .tci files.\nTrigger Search never moves or changes them.")
+            Text("Add the folders that hold your Trigger 2 .tci files, and optionally a separate Effects library.\nTrigger Search never moves or changes them.")
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button("Choose Folders…") { model.showFolders = true }.buttonStyle(.borderedProminent)
         }

@@ -26,8 +26,12 @@ struct InspectorView: View {
                         tagSection(rows)
                         if rows.count == 1 { Divider(); NotesSection(row: rows[0]) }
                         Divider()
-                        categorySection(rows)
-                        sourceSection(rows)
+                        if rows.allSatisfy(\.isEffect) {
+                            effectCategorySection(rows)
+                        } else if !rows.contains(where: \.isEffect) {
+                            categorySection(rows)
+                            sourceSection(rows)
+                        }
                         Divider()
                         PackOverrideSection(title: "Pack", rows: rows,
                                             current: { $0.pack },
@@ -60,8 +64,12 @@ struct InspectorView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(row.name).font(.title3).bold().textSelection(.enabled)
                 HStack(spacing: 6) {
-                    Label { Text(row.categoryName) } icon: { CategoryIcon(category: row.category) }
-                    Text("·"); Label(row.sourceName, systemImage: row.source.symbol)
+                    if row.isEffect {
+                        Label(row.categoryName, systemImage: row.categorySymbol)
+                    } else {
+                        Label { Text(row.categoryName) } icon: { CategoryIcon(category: row.category) }
+                        Text("·"); Label(row.sourceName, systemImage: row.source.symbol)
+                    }
                     Text("·"); Text(row.format).monospaced()
                     if !row.variant.isEmpty { Text("·"); Text(row.variant).monospaced() }
                 }
@@ -125,6 +133,28 @@ struct InspectorView: View {
             .labelsHidden()
             if overridden {
                 Button("Use Auto-Detected") { model.setCategory(nil, for: ids) }
+                    .controlSize(.small)
+            } else {
+                Text("Detected from the file and folder names.").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func effectCategorySection(_ rows: [Row]) -> some View {
+        let categories = Set(rows.compactMap(\.effectCategory))
+        let overridden = rows.contains { $0.meta.effectCategory != nil }
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Type").font(.headline)
+            Picker("Type", selection: Binding<EffectCategory?>(
+                get: { categories.count == 1 ? categories.first : nil },
+                set: { if let c = $0 { model.setEffectCategory(c, for: ids) } }
+            )) {
+                if categories.count != 1 { Text("Mixed").tag(EffectCategory?.none) }
+                ForEach(EffectCategory.allCases, id: \.self) { Text($0.singularName).tag(EffectCategory?.some($0)) }
+            }
+            .labelsHidden()
+            if overridden {
+                Button("Use Auto-Detected") { model.setEffectCategory(nil, for: ids) }
                     .controlSize(.small)
             } else {
                 Text("Detected from the file and folder names.").font(.caption).foregroundStyle(.secondary)

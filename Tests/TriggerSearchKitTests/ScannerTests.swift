@@ -21,6 +21,21 @@ final class ScannerTests: XCTestCase {
         XCTAssertEqual(Set(files.map(\.packPath)), [root.standardizedFileURL.path + "/My Pack"])
     }
 
+    func testEffectsRootsScanAudioAsEffects() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("ts-fx-\(UUID().uuidString)")
+        let dir = root.appendingPathComponent("Cinematic Pack/Risers")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        for name in ["Big Riser 01.wav", "Impact Boom.aiff", "Reverse Cymbal.wav", "Snare Hit.wav", "notes.tci"] {
+            try Data("x".utf8).write(to: dir.appendingPathComponent(name))
+        }
+        defer { try? FileManager.default.removeItem(at: root) }
+        let files = TriggerSearchKit.Scanner.scan(roots: [], effectRoots: [root]).sorted { $0.name < $1.name }
+        XCTAssertEqual(files.map(\.name), ["Big Riser 01", "Impact Boom", "Reverse Cymbal", "Snare Hit"], ".tci ignored in effects roots")
+        XCTAssertTrue(files.allSatisfy { $0.kind == .effect })
+        XCTAssertEqual(files.map(\.effectCategory), [.riser, .impact, .reverse, .hit])
+        XCTAssertEqual(Set(files.map(\.pack)), ["Cinematic Pack"])
+    }
+
     func testPackAndKitInference() {
         func layout(_ root: String, _ folders: [String]) -> TriggerSearchKit.Scanner.Layout {
             TriggerSearchKit.Scanner.inferLayout(rootPath: "/x/" + root, rootName: root, folders: folders)

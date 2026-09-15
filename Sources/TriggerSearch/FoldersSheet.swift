@@ -13,27 +13,17 @@ struct FoldersSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Library Folders").font(.title2).bold()
-            Text("Trigger Search scans these folders (and everything inside them) for .tci files.")
+            Text("Trigger library: scanned for .tci instruments and .wav / .aiff one-shots.")
                 .foregroundStyle(.secondary)
+            folderList(model.data.roots, remove: model.removeRoot)
 
-            List {
-                if model.roots.isEmpty {
-                    Text("No folders yet.").foregroundStyle(.secondary)
-                }
-                ForEach(model.data.roots, id: \.self) { root in
-                    HStack {
-                        Image(systemName: "folder")
-                        VStack(alignment: .leading) {
-                            Text(URL(fileURLWithPath: root).lastPathComponent)
-                            Text(abbreviated(root)).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button { model.removeRoot(root) } label: { Image(systemName: "minus.circle") }
-                            .buttonStyle(.plain).help("Remove folder")
-                    }
-                }
+            Text("Effects library: a separate set of folders for .wav / .aiff effects (risers, impacts…). Never exported to Trigger's browser folder.")
+                .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("Add Effects Folder…") { addFolder(effects: true) }.controlSize(.small)
             }
-            .frame(minHeight: 120)
+            folderList(model.data.effectRoots, remove: model.removeEffectRoot)
 
             Divider()
             VStack(alignment: .leading, spacing: 4) {
@@ -56,7 +46,7 @@ struct FoldersSheet: View {
             Divider()
 
             HStack {
-                Button("Add Folder…") { addFolder() }
+                Button("Add Folder…") { addFolder(effects: false) }
                 Button {
                     Task { await findAutomatically() }
                 } label: {
@@ -131,15 +121,34 @@ struct FoldersSheet: View {
         }
     }
 
-    private func addFolder() {
+    private func folderList(_ roots: [String], remove: @escaping (String) -> Void) -> some View {
+        List {
+            if roots.isEmpty { Text("No folders yet.").foregroundStyle(.secondary) }
+            ForEach(roots, id: \.self) { root in
+                HStack {
+                    Image(systemName: "folder")
+                    VStack(alignment: .leading) {
+                        Text(URL(fileURLWithPath: root).lastPathComponent)
+                        Text(abbreviated(root)).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button { remove(root) } label: { Image(systemName: "minus.circle") }
+                        .buttonStyle(.plain).help("Remove folder")
+                }
+            }
+        }
+        .frame(minHeight: 90)
+    }
+
+    private func addFolder(effects: Bool) {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
-        panel.message = "Choose folders containing Trigger 2 .tci files"
+        panel.message = effects ? "Choose folders containing .wav / .aiff effects" : "Choose folders containing Trigger 2 .tci files"
         panel.prompt = "Add"
         if panel.runModal() == .OK {
-            for url in panel.urls { model.addRoot(url) }
+            for url in panel.urls { effects ? model.addEffectRoot(url) : model.addRoot(url) }
         }
     }
 

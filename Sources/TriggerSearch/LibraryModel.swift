@@ -8,6 +8,7 @@ enum SidebarFilter: Hashable {
     case untagged
     case category(DrumCategory)
     case source(SourceType)
+    case effectCategory(EffectCategory)
     case pack(String)
     case tag(String)
     case vendor(String)
@@ -16,22 +17,26 @@ enum SidebarFilter: Hashable {
 
 /// Which kinds of file the window shows.
 enum LibraryMode: String, CaseIterable, Identifiable {
-    case instruments, oneShots, all
+    case instruments, oneShots, all, effects
     var id: String { rawValue }
     var title: String {
         switch self {
         case .instruments: return "Instruments"
         case .oneShots: return "One-Shots"
         case .all: return "All"
+        case .effects: return "Effects"
         }
     }
+    /// Effects are a separate library; "All" means the whole Trigger library.
     func includes(_ kind: FileKind) -> Bool {
         switch self {
         case .instruments: return kind == .instrument
         case .oneShots: return kind == .oneShot
-        case .all: return true
+        case .all: return kind.isTriggerLibrary
+        case .effects: return kind == .effect
         }
     }
+    var isEffects: Bool { self == .effects }
 }
 
 /// One table row: a scanned file plus the user's metadata for it.
@@ -52,7 +57,11 @@ struct Row: Identifiable, Hashable {
     var isPlayable: Bool { file.kind == .oneShot }
     var variant: String { file.variant ?? "" }
     var category: DrumCategory { meta.category ?? file.category }
-    var categoryName: String { category.singularName }
+    var isEffect: Bool { file.kind == .effect }
+    var effectCategory: EffectCategory? { isEffect ? (meta.effectCategory ?? file.effectCategory ?? .other) : nil }
+    /// Drum category for Trigger-library files, effect type for effects.
+    var categoryName: String { effectCategory?.singularName ?? category.singularName }
+    var categorySymbol: String { effectCategory?.symbol ?? category.symbol }
     var source: SourceType { meta.source ?? file.source }
     var sourceName: String { source.displayName }
     var folder: String { file.folder }
@@ -143,6 +152,7 @@ final class LibraryModel: ObservableObject {
 
     var instrumentCount: Int { files.filter { $0.kind == .instrument }.count }
     var oneShotCount: Int { files.filter { $0.kind == .oneShot }.count }
+    var effectCount: Int { files.filter { $0.kind == .effect }.count }
 
     private func pruneSelection() {
         let visible = Set(visibleFiles.map(\.path))
@@ -183,7 +193,7 @@ final class LibraryModel: ObservableObject {
     /// What the top level of the browser folder should show: the selected rows, or, with nothing
     /// selected, everything the sidebar filter or search currently shows (except plain "All Samples").
     var topLevelRows: [Row] {
-        guard mirrorSelection else { return [] }
+        guard mirrorSelection, !mode.isEffects else { return [] }
         if !selection.isEmpty { return selectedRows }
         let showingGroup = isSearching || (filter != nil && filter != .all)
         guard showingGroup else { return [] }
@@ -208,6 +218,8 @@ final class LibraryModel: ObservableObject {
     }
 
     var roots: [URL] { data.roots.map { URL(fileURLWithPath: $0) } }
+    var effectRoots: [URL] { data.effectRoots.map { URL(fileURLWithPath: $0) } }
+    var hasAnyRoots: Bool { !data.roots.isEmpty || !data.effectRoots.isEmpty }
 
     // MARK: - Rows and filtering
 
@@ -239,6 +251,7 @@ final class LibraryModel: ObservableObject {
         case .untagged: return row.tags.isEmpty
         case .category(let c): return row.category == c
         case .source(let s): return row.source == s
+        case .effectCategory(let e): return row.effectCategory == e
         case .pack(let p): return row.pack == p
         case .tag(let t): return row.tags.contains(t)
         case .vendor(let v): return row.vendor == v
@@ -253,6 +266,20 @@ final class LibraryModel: ObservableObject {
         var counts: [DrumCategory: Int] = [:]
         for row in allRows { counts[row.category, default: 0] += 1 }
         return DrumCategory.allCases.compactMap { c in counts[c].map { (c, $0) } }
+    }
+
+    var effectCategoryCounts: [(EffectCategory, Int)] {
+        var counts: [EffectCategory: Int] = [:]
+        for row in allRows { if let e = row.effectCategory { counts[e, default: 0] += 1 } }
+        return EffectCategory.allCases.compactMap { e in counts[e].map { (e, $0) } }
+    }
+
+    func setEffectCategory(_ category: EffectCategory?, for ids: Set<String>) {
+        let byPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0) })
+        update(ids) { $0.effectCategory = category }
+        for id in ids where (byPath[id]?.effectCategory ?? .other) == category {
+            update([id]) { $0.effectCategory = nil }
+        }
     }
 
     var sourceCounts: [(SourceType, Int)] {
@@ -368,8 +395,9 @@ final class LibraryModel: ObservableObject {
         guard !isScanning else { return }
         isScanning = true
         let roots = self.roots
+        let effectRoots = self.effectRoots
         Task.detached(priority: .userInitiated) {
-            let found = Scanner.scan(roots: roots)
+            let found = Scanner.scan(roots: roots, effectRoots: effectRoots)
             await MainActor.run {
                 self.files = found
                 self.data.reconcile(with: found)
@@ -394,6 +422,20 @@ final class LibraryModel: ObservableObject {
 
     func removeRoot(_ path: String) {
         data.roots.removeAll { $0 == path }
+        persist()
+        rescan()
+    }
+
+    func addEffectRoot(_ url: URL) {
+        let path = url.standardizedFileURL.path
+        guard !data.effectRoots.contains(path) else { return }
+        data.effectRoots.append(path)
+        persist()
+        rescan()
+    }
+
+    func removeEffectRoot(_ path: String) {
+        data.effectRoots.removeAll { $0 == path }
         persist()
         rescan()
     }
@@ -494,9 +536,9 @@ final class LibraryModel: ObservableObject {
 
     @Published var browserFolderMessage: String?
 
-    /// Rows for every file regardless of the current mode.
+    /// Rows for every Trigger-library file regardless of the current mode. Effects are never exported.
     private var exportRows: [Row] {
-        files.map { Row(file: $0, meta: data.items[$0.path] ?? ItemMeta(),
+        files.filter(\.kind.isTriggerLibrary).map { Row(file: $0, meta: data.items[$0.path] ?? ItemMeta(),
                         vendor: data.vendors[$0.packKey] ?? $0.vendor ?? "",
                         pack: data.packNames[$0.packKey] ?? $0.pack,
                         kit: (data.items[$0.path]?.kit) ?? $0.kitPath.flatMap { data.kitNames[$0] } ?? $0.kit ?? "") }

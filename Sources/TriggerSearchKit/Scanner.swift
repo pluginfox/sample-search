@@ -2,11 +2,12 @@ import Foundation
 
 /// Walks library roots and lists every `.tci`, `.wav` and `.aiff` file.
 public enum Scanner {
-    public static func scan(roots: [URL]) -> [TCIFile] {
+    /// Scans Trigger-library roots (tci + wav/aiff one-shots) and Effects roots (wav/aiff as effects).
+    public static func scan(roots: [URL], effectRoots: [URL] = []) -> [TCIFile] {
         var seen = Set<String>()
         var results: [TCIFile] = []
-        for root in roots {
-            for file in scan(root: root) where !seen.contains(file.path) {
+        for (root, effects) in roots.map { ($0, false) } + effectRoots.map { ($0, true) } {
+            for file in scan(root: root, asEffects: effects) where !seen.contains(file.path) {
                 seen.insert(file.path)
                 results.append(file)
             }
@@ -14,7 +15,7 @@ public enum Scanner {
         return results
     }
 
-    public static func scan(root: URL) -> [TCIFile] {
+    public static func scan(root: URL, asEffects: Bool = false) -> [TCIFile] {
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
         guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: keys,
@@ -24,7 +25,11 @@ public enum Scanner {
         let rootPath = root.standardizedFileURL.path
         var files: [TCIFile] = []
         for case let url as URL in enumerator {
-            guard let kind = FileKind.extensions[url.pathExtension.lowercased()] else { continue }
+            guard var kind = FileKind.extensions[url.pathExtension.lowercased()] else { continue }
+            if asEffects {
+                guard kind == .oneShot else { continue }   // Effects folders hold audio files only
+                kind = .effect
+            }
             guard let values = try? url.resourceValues(forKeys: Set(keys)), values.isRegularFile == true else { continue }
             files.append(make(url: url, kind: kind, rootPath: rootPath, rootName: root.lastPathComponent,
                               size: Int64(values.fileSize ?? 0),
@@ -89,6 +94,7 @@ public enum Scanner {
                        kit: layout.kit, kitPath: layout.kitPath, folder: relative,
                        category: Classifier.category(name: name, folders: folders),
                        source: Classifier.source(name: name, folders: folders),
+                       effectCategory: kind == .effect ? Classifier.effectCategory(name: name, folders: folders) : nil,
                        vendor: Vendors.guess(root: rootPath, folders: folders),
                        size: size, modified: modified)
     }

@@ -6,7 +6,11 @@ favourites, and lets you drag a sample straight onto a Trigger 2 slot in your DA
 
 ## Features
 
-- **Two modes** in the toolbar: *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`) or *All*.
+- **Modes** in the toolbar: *Instruments* (`.tci`), *One-Shots* (`.wav`, `.aif`, `.aiff`), *All*
+  (the whole Trigger library) and *Effects*, a completely separate library of `.wav` / `.aiff`
+  sound effects (risers, downlifters, impacts, hits, whooshes, drones, reverses) scanned from its
+  own folders, classified by type from names, and never written to the Trigger browser folder.
+  Effects share tags, favourites, notes, packs, kits, vendors, preview and search with the rest.
   The mode is remembered between launches.
 - **One-shot preview**: play button on each row and in the inspector, Space to play the selection,
   ⌘. to stop, and an optional "Play on Select" toggle for quick auditioning. The inspector shows

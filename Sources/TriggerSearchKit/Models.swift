@@ -75,20 +75,83 @@ public enum SourceType: String, Codable, CaseIterable, Hashable, Comparable {
     }
 }
 
+/// Sound-effect type for the separate Effects library (risers, impacts…).
+public enum EffectCategory: String, Codable, CaseIterable, Hashable, Comparable {
+    case riser, downlifter, impact, hit, whoosh, drone, reverse, other
+
+    public var displayName: String {
+        switch self {
+        case .riser: return "Risers"
+        case .downlifter: return "Downlifters"
+        case .impact: return "Impacts"
+        case .hit: return "Hits & Stabs"
+        case .whoosh: return "Whooshes & Sweeps"
+        case .drone: return "Drones & Textures"
+        case .reverse: return "Reverses"
+        case .other: return "Other"
+        }
+    }
+
+    public var singularName: String {
+        switch self {
+        case .riser: return "Riser"
+        case .downlifter: return "Downlifter"
+        case .impact: return "Impact"
+        case .hit: return "Hit"
+        case .whoosh: return "Whoosh"
+        case .drone: return "Drone"
+        case .reverse: return "Reverse"
+        case .other: return "Other"
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .riser: return "arrow.up.right"
+        case .downlifter: return "arrow.down.right"
+        case .impact: return "burst.fill"
+        case .hit: return "bolt.fill"
+        case .whoosh: return "wind"
+        case .drone: return "waveform.path"
+        case .reverse: return "arrow.uturn.backward"
+        case .other: return "questionmark.circle"
+        }
+    }
+
+    public static func < (lhs: EffectCategory, rhs: EffectCategory) -> Bool {
+        let order = EffectCategory.allCases
+        return (order.firstIndex(of: lhs) ?? 0) < (order.firstIndex(of: rhs) ?? 0)
+    }
+}
+
 /// What kind of file a library entry is.
 public enum FileKind: String, Codable, Hashable, Comparable {
     /// Slate Trigger `.tci` compressed instrument.
     case instrument
     /// Plain `.wav` / `.aif` / `.aiff` one-shot sample.
     case oneShot
+    /// A `.wav` / `.aiff` from the separate Effects library (risers, impacts…).
+    case effect
 
     public static let extensions: [String: FileKind] = [
         "tci": .instrument, "wav": .oneShot, "wave": .oneShot, "aif": .oneShot, "aiff": .oneShot,
     ]
 
-    public var displayName: String { self == .instrument ? "Instrument" : "One-Shot" }
+    public var displayName: String {
+        switch self {
+        case .instrument: return "Instrument"
+        case .oneShot: return "One-Shot"
+        case .effect: return "Effect"
+        }
+    }
 
-    public static func < (lhs: FileKind, rhs: FileKind) -> Bool { lhs == .instrument && rhs == .oneShot }
+    /// Part of the Trigger library (exported to the browser folder) rather than the Effects library.
+    public var isTriggerLibrary: Bool { self != .effect }
+
+    public static func < (lhs: FileKind, rhs: FileKind) -> Bool {
+        let order: [FileKind] = [.instrument, .oneShot, .effect]
+        return (order.firstIndex(of: lhs) ?? 0) < (order.firstIndex(of: rhs) ?? 0)
+    }
 }
 
 /// One library file found on disk. Everything here is derived from the filesystem.
@@ -118,6 +181,8 @@ public struct TCIFile: Identifiable, Hashable, Codable {
     public let category: DrumCategory
     /// Mic source guessed from the name (OH, Room, FX …); Direct when nothing says otherwise.
     public let source: SourceType
+    /// Effect type, only for `.effect` files.
+    public let effectCategory: EffectCategory?
     /// Vendor guessed from folder names; nil when unknown.
     public let vendor: String?
     public let size: Int64
@@ -132,10 +197,12 @@ public struct TCIFile: Identifiable, Hashable, Codable {
 
     public init(path: String, kind: FileKind = .instrument, name: String, baseName: String, variant: String?, root: String,
                 pack: String, packPath: String? = nil, kit: String? = nil, kitPath: String? = nil,
-                folder: String, category: DrumCategory, source: SourceType = .direct, vendor: String? = nil,
+                folder: String, category: DrumCategory, source: SourceType = .direct,
+                effectCategory: EffectCategory? = nil, vendor: String? = nil,
                 size: Int64, modified: Date) {
         self.path = path
         self.source = source
+        self.effectCategory = effectCategory
         self.packPath = packPath ?? (root + "/" + pack)
         self.kit = kit
         self.kitPath = kitPath ?? kit.map { (packPath ?? (root + "/" + pack)) + "/" + $0 }
@@ -161,6 +228,8 @@ public struct ItemMeta: Codable, Hashable {
     public var category: DrumCategory?
     /// Manual source override.
     public var source: SourceType?
+    /// Manual effect-type override (Effects library only).
+    public var effectCategory: EffectCategory?
     /// Manual kit assignment; wins over the folder-based kit.
     public var kit: String?
     /// Free-text notes; searchable, not exported to the browser folder.
@@ -182,10 +251,10 @@ public struct ItemMeta: Codable, Hashable {
     }
 
     public var isEmpty: Bool {
-        tags.isEmpty && !favorite && category == nil && source == nil && kit == nil && notes.isEmpty
+        tags.isEmpty && !favorite && category == nil && source == nil && effectCategory == nil && kit == nil && notes.isEmpty
     }
 
-    enum CodingKeys: String, CodingKey { case tags, favorite, category, source, kit, notes, fileName, fileSize }
+    enum CodingKeys: String, CodingKey { case tags, favorite, category, source, effectCategory, kit, notes, fileName, fileSize }
 
     /// Tolerant decoding: an old "room" category override becomes a Rooms source override.
     public init(from decoder: Decoder) throws {
@@ -196,6 +265,7 @@ public struct ItemMeta: Codable, Hashable {
         category = rawCategory.flatMap(DrumCategory.init(rawValue:))
         source = try c.decodeIfPresent(String.self, forKey: .source).flatMap(SourceType.init(rawValue:))
         if rawCategory == "room", source == nil { source = .rooms }
+        effectCategory = try c.decodeIfPresent(String.self, forKey: .effectCategory).flatMap(EffectCategory.init(rawValue:))
         kit = try c.decodeIfPresent(String.self, forKey: .kit)
         notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
         fileName = try c.decodeIfPresent(String.self, forKey: .fileName) ?? ""
@@ -206,6 +276,8 @@ public struct ItemMeta: Codable, Hashable {
 /// Everything persisted between launches.
 public struct LibraryData: Codable {
     public var roots: [String] = []
+    /// Folders holding the separate Effects library (scanned for .wav/.aiff as `.effect`).
+    public var effectRoots: [String] = []
     public var items: [String: ItemMeta] = [:]
     /// Vendor overrides keyed by `TCIFile.packKey`.
     public var vendors: [String: String] = [:]
@@ -223,11 +295,12 @@ public struct LibraryData: Codable {
         self.kitNames = kitNames
     }
 
-    enum CodingKeys: String, CodingKey { case roots, items, vendors, packNames, kitNames }
+    enum CodingKeys: String, CodingKey { case roots, effectRoots, items, vendors, packNames, kitNames }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         roots = try c.decodeIfPresent([String].self, forKey: .roots) ?? []
+        effectRoots = try c.decodeIfPresent([String].self, forKey: .effectRoots) ?? []
         items = try c.decodeIfPresent([String: ItemMeta].self, forKey: .items) ?? [:]
         vendors = try c.decodeIfPresent([String: String].self, forKey: .vendors) ?? [:]
         packNames = try c.decodeIfPresent([String: String].self, forKey: .packNames) ?? [:]
