@@ -19,7 +19,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 	<key>CFBundleDevelopmentRegion</key><string>en</string>
 	<key>CFBundleExecutable</key><string>Sample Search</string>
 	<key>CFBundleIconFile</key><string>AppIcon</string>
-	<key>CFBundleIdentifier</key><string>local.sample-search</string>
+	<key>CFBundleIdentifier</key><string>com.pluginfox.samplesearch</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
 	<key>CFBundleName</key><string>Sample Search</string>
 	<key>CFBundleDisplayName</key><string>Sample Search</string>
@@ -29,6 +29,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 	<key>LSMinimumSystemVersion</key><string>14.0</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.music</string>
 	<key>NSHighResolutionCapable</key><true/>
+	<key>NSHumanReadableCopyright</key><string>© $(date +%Y) Pluginfox</string>
 </dict>
 </plist>
 PLIST
