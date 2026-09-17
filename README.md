@@ -44,7 +44,7 @@ tags and favourites, and feeds them back to Trigger 2 through a folder its own b
 - **Scans any folders you choose** for those files (iCloud Drive folders work). "Find TCI Files
   Automatically" uses Spotlight to suggest folders across the whole Mac.
 ### Auto-metadata from names
-- **Category** (kick / snare / tom / hi-hat / cymbal / percussion),
+- **Category** (kick / snare / tom / hi-hat / cymbal / percussion / loop),
 - **Source** (Direct / Overheads / Rooms / FX, from tokens such as `OH`, `RM`, `Room`, `Amb`, `FX`;
   Direct by default)
 - **Pack**, **sub-folder**, and **variant suffix** such as `SSDR`, `NRG`, `Z1`, `Z3`.

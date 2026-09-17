@@ -38,6 +38,19 @@ final class ClassifierTests: XCTestCase {
         XCTAssertEqual(Classifier.source(name: "Take 1", folders: ["Kick", "FX"]), .fx)
     }
 
+    func testLoops() {
+        XCTAssertEqual(Classifier.category(name: "Kick Loop 120bpm", folders: []), .loop)
+        XCTAssertEqual(Classifier.category(name: "Full Kit Groove 02", folders: []), .loop)
+        XCTAssertEqual(Classifier.category(name: "Snare Fill 3", folders: []), .loop)
+        XCTAssertEqual(Classifier.category(name: "Take 04", folders: ["Pack A", "Loops 95BPM"]), .loop)
+        XCTAssertEqual(Classifier.category(name: "Kick Felt Beater", folders: []), .kick, "beater is not a loop word")
+        XCTAssertEqual(Classifier.category(name: "Snare Filler", folders: []), .snare, "fill only counts as a whole word")
+        // A "Loops" folder is a category folder, so it is never mistaken for a kit.
+        XCTAssertEqual(Classifier.category(in: "Loops"), .loop)
+        XCTAssertNil(SampleSearchKit.Scanner.inferLayout(rootPath: "/x/Pack A", rootName: "Pack A",
+                                                         folders: ["Loops"], rootIsPack: true).kit)
+    }
+
     func testCategoryFallsBackToFolders() {
         XCTAssertEqual(Classifier.category(name: "Mixed 01", folders: ["Snares", "Snare05"]), .snare)
         XCTAssertEqual(Classifier.category(name: "MIXED", folders: ["Kit C", "Kick"]), .kick)

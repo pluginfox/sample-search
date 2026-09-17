@@ -88,8 +88,21 @@ public enum Classifier {
     /// Words that contain a keyword by accident and should be ignored.
     private static let falseFriends = ["custom", "bottom", "atom", "tomorrow", "automation", "phantom", "stacked", "chatter", "that", "what", "whatever", "shatter", "thatch", "roomy"]
 
-    /// Categorises using the file name first, then folders from nearest to furthest.
+    /// Words that mark a loop rather than a single hit. "beat" and "break" are left out on purpose:
+    /// they collide with "beater" and "brake drum".
+    private static let loopSubstrings = ["loop", "groove", "bpm"]
+    private static let loopTokens: Set<String> = ["fill", "fills"]
+
+    static func isLoop(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        if loopSubstrings.contains(where: { lower.contains($0) }) { return true }
+        return lower.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains { loopTokens.contains(String($0)) }
+    }
+
+    /// Categorises using the file name first, then folders from nearest to furthest. A loop word
+    /// anywhere in the name or folders wins, so "Kick Loop 120bpm" is a loop, not a kick.
     public static func category(name: String, folders: [String]) -> DrumCategory {
+        if ([name] + folders).contains(where: isLoop) { return .loop }
         for text in [name] + folders.reversed() {
             if let c = category(in: text) { return c }
         }
@@ -98,6 +111,7 @@ public enum Classifier {
 
     /// Returns the category whose keyword appears earliest in `text`, or nil.
     static func category(in text: String) -> DrumCategory? {
+        if isLoop(text) { return .loop }
         var lower = text.lowercased()
         for word in falseFriends { lower = lower.replacingOccurrences(of: word, with: " ") }
         var best: (DrumCategory, Int)?

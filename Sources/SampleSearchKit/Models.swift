@@ -2,7 +2,7 @@ import Foundation
 
 /// Coarse drum category, derived from file and folder names (overridable per file).
 public enum DrumCategory: String, Codable, CaseIterable, Hashable, Comparable {
-    case kick, snare, tom, hihat, cymbal, percussion, other
+    case kick, snare, tom, hihat, cymbal, percussion, loop, other
 
     public var displayName: String {
         switch self {
@@ -12,6 +12,7 @@ public enum DrumCategory: String, Codable, CaseIterable, Hashable, Comparable {
         case .hihat: return "Hi-Hats"
         case .cymbal: return "Cymbals"
         case .percussion: return "Percussion"
+        case .loop: return "Loops"
         case .other: return "Other"
         }
     }
@@ -24,6 +25,7 @@ public enum DrumCategory: String, Codable, CaseIterable, Hashable, Comparable {
         case .hihat: return "Hi-Hat"
         case .cymbal: return "Cymbal"
         case .percussion: return "Percussion"
+        case .loop: return "Loop"
         case .other: return "Other"
         }
     }
@@ -37,6 +39,7 @@ public enum DrumCategory: String, Codable, CaseIterable, Hashable, Comparable {
         case .hihat: return "line.3.horizontal"
         case .cymbal: return "sun.max"
         case .percussion: return "hands.clap"
+        case .loop: return "repeat"
         case .other: return "questionmark.circle"
         }
     }
