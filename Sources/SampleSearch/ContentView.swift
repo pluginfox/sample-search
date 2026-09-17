@@ -79,7 +79,7 @@ struct ContentView: View {
             Button("OK", role: .cancel) {}
         } message: { Text(model.browserFolderMessage ?? "") }
         .onAppear { if model.hasAnyRoots { model.rescan() } }
-        .onChange(of: model.selection) { _ in model.selectionChanged() }
+        .onChange(of: model.selection) { _, _ in model.selectionChanged() }
         .frame(minWidth: 900, minHeight: 500)
     }
 

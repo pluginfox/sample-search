@@ -295,7 +295,7 @@ struct KitSection: View {
                 .controlSize(.small)
             }
         }
-        .onChange(of: rows.map(\.id)) { _ in draft = "" }
+        .onChange(of: rows.map(\.id)) { _, _ in draft = "" }
     }
 }
 
@@ -328,7 +328,7 @@ struct PackOverrideSection: View {
                 Button(resetTitle) { apply("") }.controlSize(.small)
             }
         }
-        .onChange(of: rows.map(\.id)) { _ in draft = "" }
+        .onChange(of: rows.map(\.id)) { _, _ in draft = "" }
     }
 }
 

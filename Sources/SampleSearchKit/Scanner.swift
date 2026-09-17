@@ -6,7 +6,8 @@ public enum Scanner {
     public static func scan(roots: [URL], effectRoots: [URL] = [], effectTypes: [EffectType] = EffectType.defaults) -> [TCIFile] {
         var seen = Set<String>()
         var results: [TCIFile] = []
-        for (root, effects) in roots.map { ($0, false) } + effectRoots.map { ($0, true) } {
+        let all = roots.map({ ($0, false) }) + effectRoots.map({ ($0, true) })
+        for (root, effects) in all {
             for file in scan(root: root, asEffects: effects, effectTypes: effectTypes) where !seen.contains(file.path) {
                 seen.insert(file.path)
                 results.append(file)
