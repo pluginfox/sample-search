@@ -7,18 +7,20 @@ func draw(size: CGFloat) -> NSImage {
     image.lockFocus()
     let ctx = NSGraphicsContext.current!.cgContext
     let s = size
-    // macOS icon: rounded square inset ~10% with ~22% corner radius.
-    let inset = s * 0.10
+    // Standard macOS app-icon tile: 824pt square centred on a 1024pt canvas, ~22.5% corner radius.
+    // Everything is drawn inside this shape; artwork or shadows outside it make macOS 26 treat the
+    // icon as non-standard and shrink it into a grey container.
+    let inset = s * (100.0 / 1024.0)
     let rect = CGRect(x: inset, y: inset, width: s - 2 * inset, height: s - 2 * inset)
     let radius = rect.width * 0.225
     let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
 
-    // Shadow under the tile.
-    ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -s * 0.012), blur: s * 0.03, color: NSColor.black.withAlphaComponent(0.35).cgColor)
+    // No baked-in drop shadow: the system supplies its own.
     NSColor(calibratedRed: 0.12, green: 0.12, blue: 0.13, alpha: 1).setFill()
     path.fill()
-    ctx.restoreGState()
+    // Clip all remaining drawing to the tile.
+    ctx.saveGState()
+    path.addClip()
 
     // Gradient background: deep charcoal to warm orange at the bottom.
     ctx.saveGState()
@@ -65,14 +67,14 @@ func draw(size: CGFloat) -> NSImage {
 
     // Magnifier: bottom-right, white with dark stroke so it reads on the orange.
     let mr = rect.width * 0.14
-    let mc = CGPoint(x: rect.maxX - rect.width * 0.27, y: rect.minY + rect.height * 0.27)
+    let mc = CGPoint(x: rect.maxX - rect.width * 0.31, y: rect.minY + rect.height * 0.31)
     let lens = NSBezierPath(ovalIn: CGRect(x: mc.x - mr, y: mc.y - mr, width: 2 * mr, height: 2 * mr))
     lens.lineWidth = s * 0.05
     let handle = NSBezierPath()
     handle.lineWidth = s * 0.07
     handle.lineCapStyle = .round
     handle.move(to: CGPoint(x: mc.x + mr * 0.75, y: mc.y - mr * 0.75))
-    handle.line(to: CGPoint(x: mc.x + mr * 1.75, y: mc.y - mr * 1.75))
+    handle.line(to: CGPoint(x: mc.x + mr * 1.5, y: mc.y - mr * 1.5))
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: -s * 0.008), blur: s * 0.02, color: NSColor.black.withAlphaComponent(0.5).cgColor)
     NSColor(calibratedRed: 0.09, green: 0.09, blue: 0.10, alpha: 0.9).setFill()
@@ -82,6 +84,7 @@ func draw(size: CGFloat) -> NSImage {
     handle.stroke()
     ctx.restoreGState()
 
+    ctx.restoreGState()   // tile clip
     image.unlockFocus()
     return image
 }
